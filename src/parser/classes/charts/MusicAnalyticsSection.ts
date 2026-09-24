@@ -6,7 +6,6 @@ import MusicAnalyticsFeaturedSection from './MusicAnalyticsFeaturedSection.js';
 import MusicAnalyticsLocationViews from './MusicAnalyticsLocationViews.js';
 import MusicAnalyticsPerspectiveMetadata from './MusicAnalyticsPerspectiveMetadata.js';
 import MusicAnalyticsPodcastShowEntries from './MusicAnalyticsPodcastShowViews.js';
-import MusicAnalyticsTrack from './MusicAnalyticsTrack.js';
 import MusicAnalyticsTrackViewsTypes from './MusicAnalyticsTrackViewsTypes.js';
 import MusicAnalyticsVideoViews from './MusicAnalyticsVideoViews.js';
 
@@ -20,7 +19,6 @@ export default class MusicAnalyticsSection extends YTNode {
   public perspective_metadata?: MusicAnalyticsPerspectiveMetadata;
   public podcast_shows?: ObservedArray<MusicAnalyticsPodcastShowEntries>;
   public track_types?: ObservedArray<MusicAnalyticsTrackViewsTypes>;
-  public tracks?: ObservedArray<MusicAnalyticsTrack>;
   public videos?: ObservedArray<MusicAnalyticsVideoViews>;
 
   constructor(data: RawNode) {
@@ -54,10 +52,6 @@ export default class MusicAnalyticsSection extends YTNode {
       this.track_types = observe(
         content.trackTypes.map((track_type: RawNode) => new MusicAnalyticsTrackViewsTypes(track_type))
       );
-    }
-
-    if (Reflect.has(content, 'tracks')) {
-      this.tracks = observe(content.tracks.map((track: RawNode) => new MusicAnalyticsTrack(track)));
     }
 
     if (Reflect.has(content, 'videos')) {

@@ -77,7 +77,6 @@ export { default as MusicAnalyticsPerspectiveMetadata } from './classes/charts/M
 export { default as MusicAnalyticsPodcastShowEntry } from './classes/charts/MusicAnalyticsPodcastShowEntry.js';
 export { default as MusicAnalyticsPodcastShowViews } from './classes/charts/MusicAnalyticsPodcastShowViews.js';
 export { default as MusicAnalyticsSection } from './classes/charts/MusicAnalyticsSection.js';
-export { default as MusicAnalyticsTrack } from './classes/charts/MusicAnalyticsTrack.js';
 export { default as MusicAnalyticsTrackView } from './classes/charts/MusicAnalyticsTrackView.js';
 export { default as MusicAnalyticsTrackViewsTypes } from './classes/charts/MusicAnalyticsTrackViewsTypes.js';
 export { default as MusicAnalyticsVideoView } from './classes/charts/MusicAnalyticsVideoView.js';
