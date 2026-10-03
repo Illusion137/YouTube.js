@@ -117,7 +117,7 @@ export default class BotGuardManager {
     const cache_check = this.#checkCache(args);
     if (cache_check) return cache_check;
 
-    const initial_data = await this.#innertube.initialData(args.atn_page_url);
+    const initial_data = await this.#innertube.pageConfig(args.atn_page_url);
     if (!initial_data.atn && !initial_data.eacr_token) throw new InnertubeError(`Was unable to find a challenge in atn_page_url: ${args.atn_page_url}`);
     const challenge_response = initial_data.atn ?? await this.#getApiChallenge({ ...args, engagement_type: 'ENGAGEMENT_TYPE_UNBOUND', eacr_token: initial_data.eacr_token! });
     const botguard_challenge_info = this.#challengeResponseToBotGuardChallengeInfo(challenge_response, initial_data.ytcfg ?? args.ytcfg);
