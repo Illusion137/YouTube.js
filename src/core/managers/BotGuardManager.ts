@@ -4,7 +4,6 @@ import type { AttIdsRaw } from '../../parser/classes/commands/RunAttestationComm
 import type { IGetChallengeResponse, RawNode } from '../../parser/index.js';
 import type { BotGuardChallengeInfo, BotGuardSolver, BotGuardSolverChallenge, BotGuardLogBinding, BotGuardSessionTokenBinding } from '../../types/BotGuard.js';
 import type { EngagementType, InnerTubeClient } from '../../types/Misc.js';
-import { channelUserDelegationContext } from '../../utils/Context.js';
 import { InnertubeError } from '../../utils/Utils.js';
 import type { PartialContext } from '../index.js';
 
@@ -249,10 +248,21 @@ export default class BotGuardManager {
    */
   async studioSessionToken(botguard_solver: BotGuardSolver<BotGuardSessionTokenBinding>, channel_id: string) {
     const session_token_binding_fn = (challenge: string): BotGuardSessionTokenBinding => ({ atr_challenge: challenge });
-    const user_one_time_context = { user: channelUserDelegationContext(channel_id) };
-
+    
     // get initial eats & cache unbound challenge
-    await this.studioAttestationChallenge();
+    const challenge = await this.studioAttestationChallenge();
+
+    const user_one_time_context: PartialContext = {
+      user: {
+        delegationContext: {
+          externalChannelId: channel_id,
+          roleType: {
+            channelRoleType: 'CREATOR_CHANNEL_ROLE_TYPE_OWNER'
+          }
+        },
+        serializedDelegationContext: (challenge.bg_challenge.ytcfg?.INNERTUBE_CONTEXT_SERIALIZED_DELEGATION_CONTEXT as string) ?? ''
+      }
+    };
 
     const creator_studio_result = await this.run(botguard_solver, {
       content_binding: session_token_binding_fn,
