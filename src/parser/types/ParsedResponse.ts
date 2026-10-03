@@ -36,6 +36,7 @@ export interface IParsedResponse {
   web_reauth_url?: string;
   plt?: string;
   require_challenge?: boolean;
+  integrity_token?: IIntegrityToken;
   actions?: SuperParsedResult<YTNode>;
   actions_memo?: Memo;
   content?: YTNode;
@@ -128,6 +129,12 @@ export interface IBotguardData {
   program: string;
 }
 
+export interface IIntegrityToken {
+  estimated_ttl_secs: number;
+  integrity_token: string;
+  mint_refresh_threshold: number;
+}
+
 export interface IPlaybackTracking {
   videostats_watchtime_url: string;
   videostats_playback_url: string;
@@ -185,4 +192,5 @@ export type IGetChallengeResponse = Pick<IParsedResponse, 'challenge' | 'bg_chal
 export type IESRChallengeResponse = Pick<IParsedResponse, 'ctx' | 'should_fetch_reauth_session_token' | 'session_token'>;
 export type IGetWebReauthURLResponse = Pick<IParsedResponse, 'web_reauth_url' | 'encoded_reauth_proof_token' | 'session_risk_ctx' | 'plt' | 'require_challenge'>;
 export type IGetSessionTokenResponse = Pick<IParsedResponse, 'session_token'>;
+export type IAttestationLog = Pick<IParsedResponse, 'integrity_token'>;
 export type IShowEngagementPanelResponse = Pick<IParsedResponse, 'content'>;

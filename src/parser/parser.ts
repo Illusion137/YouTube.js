@@ -553,6 +553,14 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     parsed_data.require_challenge = data.requireChallenge;
   }
 
+  if (data.integrityToken) {
+    parsed_data.integrity_token = {
+      estimated_ttl_secs: data.integrityToken.estimatedTtlSecs, 
+      integrity_token: data.integrityToken.integrityToken, 
+      mint_refresh_threshold: data.integrityToken.mintRefreshThreshold 
+    };
+  }
+
   if (data.playerResponse) {
     parsed_data.player_response = parseResponse(data.playerResponse);
   }
