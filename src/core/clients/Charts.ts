@@ -30,9 +30,9 @@ export default class Charts {
   }
 
   #appendChartType(query: URLSearchParams, chart_type: ChartType) {
-    query.append('chart_params_chart_type', chart_type); 
+    query.append('chart_params_chart_type', chart_type);
   }
-  #appendEntityParamsEntity(query: URLSearchParams, entity: EntityParamsEntity){
+  #appendEntityParamsEntity(query: URLSearchParams, entity: EntityParamsEntity) {
     query.append('entity_params_entity', entity);
   }
   #appendDateParamsInterval(query: URLSearchParams, args: ChartsQueryArgsArtist | ChartsQueryArgsLocation) {
