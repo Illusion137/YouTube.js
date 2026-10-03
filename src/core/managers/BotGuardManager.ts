@@ -185,6 +185,30 @@ export default class BotGuardManager {
   }
 
   /**
+   * Fetches a challenge and logs its attestation.
+   * @param botguard_solver - The BotGuard challenge solver
+   */
+  async fetchIntegrityToken(botguard_solver: BotGuardSolver<BotGuardLogBinding>) {
+    const challenge = await this.getChallenge({
+      atn_page_url: 'https://www.youtube.com/',
+      engagement_type: 'ENGAGEMENT_TYPE_UNBOUND',
+      ids: []
+    });
+    const binding: BotGuardLogBinding = {
+      c: challenge.challenge,
+      e: 'ENGAGEMENT_TYPE_INTEGRITY_GENERATION'
+    };
+    const web_response = await botguard_solver.solve(challenge.bg_challenge, binding);
+
+    return await this.#innertube.actions.execute('/att/log', {
+      challenge: challenge.challenge,
+      engagementType: 'ENGAGEMENT_TYPE_INTEGRITY_GENERATION',
+      webResponse: web_response,
+      returnIntegrityToken: true
+    });
+  }
+
+  /**
    * Fetches the attestation challenge for various YouTube Studio actions
    */
   async studioAttestationChallenge(){
