@@ -131,8 +131,9 @@ export interface IBotguardData {
 
 export interface IIntegrityToken {
   estimated_ttl_secs: number;
-  integrity_token: string;
-  mint_refresh_threshold: number;
+  integrity_token?: string;
+  mint_refresh_threshold?: number;
+  websafe_fallback_token?: string;
 }
 
 export interface IPlaybackTracking {

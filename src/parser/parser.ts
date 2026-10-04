@@ -557,7 +557,8 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     parsed_data.integrity_token = {
       estimated_ttl_secs: data.integrityToken.estimatedTtlSecs, 
       integrity_token: data.integrityToken.integrityToken, 
-      mint_refresh_threshold: data.integrityToken.mintRefreshThreshold 
+      mint_refresh_threshold: data.integrityToken.mintRefreshThreshold, 
+      websafe_fallback_token: data.integrityToken.websafeFallbackToken
     };
   }
 
