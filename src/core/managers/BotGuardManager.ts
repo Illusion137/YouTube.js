@@ -297,7 +297,7 @@ export default class BotGuardManager {
     const evaluate_session_risk_response = await this.#innertube.actions.execute('/att/esr', { 
       parse: true,
       client: 'WEB_CREATOR',
-      challenge: creator_studio_result.challenge,
+      challenge: creator_studio_result.challenge.challenge,
       botguardResponse: creator_studio_result.web_response,
       xguardClientStatus: 0,
       one_time_context: context_config.user_one_time_context
