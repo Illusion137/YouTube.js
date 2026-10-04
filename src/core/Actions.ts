@@ -22,15 +22,8 @@ import type {
   IUploadFeedbackResponse
 } from '../parser/index.js';
 import { NavigateAction, Parser } from '../parser/index.js';
-import { InnertubeError, u8ToBase64 } from '../utils/Utils.js';
-
-import {
-  UserInfo_DelegationContext,
-  UserInfo_DelegationContext_RoleType_ChannelRoleType
-} from '../../protos/generated/youtube/api/pfiinnertube/user_info.js';
-
+import { InnertubeError } from '../utils/Utils.js';
 import type { Session, PartialContext } from './index.js';
-import { Constants } from '../utils/index.js';
 
 export interface ApiResponse {
   success: boolean;
