@@ -28,6 +28,9 @@ import { generateRandomString, InnertubeError, parseLooseJSON, throwIfMissing, u
 
 import type { ApiResponse } from './core/Actions.js';
 import type {
+  BotGuardLogBinding,
+  BotGuardSessionTokenBinding,
+  BotGuardSolver,
   DownloadOptions,
   EngagementType,
   FormatOptions,
@@ -627,10 +630,11 @@ export default class Innertube {
 
   /**
    * An interface for interacting with YouTube Studio Web.
-   * @param channel_id - the channel id to interface with
+   * @param botguard_solver - The BotGuard challenge solver
+   * @param channel_id - The channel id to interface with
    */
-  studioWeb(channel_id: string) {
-    return new StudioWeb(this.#session, channel_id);
+  studioWeb(botguard_solver: BotGuardSolver<BotGuardSessionTokenBinding|BotGuardLogBinding>, channel_id: string) {
+    return new StudioWeb(this.#session, this.botguard, botguard_solver, channel_id);
   }
 
   /**

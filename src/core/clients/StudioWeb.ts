@@ -1,11 +1,13 @@
-import type { BotGuardChallenge, BotGuardSolver } from '../../types/BotGuard.js';
-import type { EngagementType } from '../../types/Misc.js';
+import type { BotGuardLogBinding, BotGuardSessionTokenBinding, BotGuardSolver } from '../../types/BotGuard.js';
 import type { FileNamedBufferReader, StudioVisibility, UploadVideoDetails } from '../../types/StudioWebUploading.js';
 import type { ICreateCaptionsResponse, ICreateVideoResponse, IMetadataUpdateResponse, IParseCaptionsResponse, IParsedResponse, IUpdateCaptionsResponse } from '../../parser/index.js';
 import { Constants, Log } from '../../utils/index.js';
 import { InnertubeError, Platform, wait } from '../../utils/Utils.js';
-import type { Actions, ParsedResponse, Session } from '../index.js';
+import type { Actions, ParsedResponse, PartialContext, Session } from '../index.js';
 import { UploadFeedbackItem } from '../../parser/nodes.js';
+import type BotGuardManager from '../managers/BotGuardManager.js';
+import type { StudioActionsEngagementType } from '../managers/BotGuardManager.js';
+import type { AttIdsRaw } from '../../parser/classes/commands/RunAttestationCommand.js';
 
 type AttestationPlacement = 'none' | 'context' | 'top_level';
 
@@ -16,30 +18,6 @@ type StudioManagedEndpoint =
   | '/video_manager/metadata_update'
   | '/upload/createvideo'
   | '/upload/feedback';
-
-interface BotGuardAttestationResponse {
-  challenge: string;
-  webResponse: string;
-};
-
-interface StudioUnboundChallenge {
-  bg_challenge: BotGuardChallenge;
-  challenge: string;
-  eats: string;
-  expires_at_ms: number;
-  result?: string;
-};
-
-interface StudioBotguardData {
-  interpreter_url: string;
-  program: string;
-};
-
-interface StudioCreatorStudioChallenge {
-  botguard_data: StudioBotguardData;
-  challenge: string;
-  eats: string;
-};
 
 interface StudioSessionTokenCache {
   session_token: string;
@@ -350,157 +328,46 @@ const UPLOAD_TYPES_TO_START_URL: Record<ScottyUploadType, string> = {
 export default class StudioWeb {
   #session: Session;
   #actions: Actions;
+  
   #channel_id: string;
-  #botguard_solver: BotGuardSolver<string>|null;
-  #unbound_challenge_cache: StudioUnboundChallenge|undefined;
+  #botguard: BotGuardManager;
+  #botguard_solver: BotGuardSolver<BotGuardSessionTokenBinding|BotGuardLogBinding>;
+  
   #auto_retry: boolean;
-  #force_refresh_session_token: boolean;
-  #channel_id_session_token_cache: StudioSessionTokenCache | null;
+  #session_token_cache: string | null;
 
-  constructor(session: Session, channel_id: string) {
+  constructor(session: Session, botguard: BotGuardManager, botguard_solver: BotGuardSolver<BotGuardSessionTokenBinding|BotGuardLogBinding>, channel_id: string) {
     this.#session = session;
     this.#actions = session.actions;
+
     this.#channel_id = channel_id;
-    this.#botguard_solver = null;
+    this.#botguard = botguard;
+    this.#botguard_solver = botguard_solver;
+
     this.#auto_retry = true;
-    this.#force_refresh_session_token = false;
-    this.#channel_id_session_token_cache = null;
+    this.#session_token_cache = null;
     if (!session.logged_in)
       throw new InnertubeError('You must be signed in to use this client.');
   }
 
-  setBotGuardSolver(botguard_solver: BotGuardSolver<string>) {
-    this.#botguard_solver = botguard_solver;
-  }
   setAutoRetrying(auto_retry: boolean) {
     this.#auto_retry = auto_retry;
   }
 
-  async #attGet(engagement_type: EngagementType, ids?: Record<string, any>[], eats?: string) {
-    const payload: Record<string, any> = {
-      engagementType: engagement_type
-    };
-
-    if (ids) payload.ids = ids;
-
-    return this.#actions.execute('/att/get', { client: 'WEB_CREATOR', parse: true, ...payload, ...(eats ? { eats } : {}) });
+  async #getBotGuardAttestation(engagement_type: StudioActionsEngagementType, ids: AttIdsRaw[]) {
+    return this.#botguard.studioAttestationResponseData(this.#botguard_solver, engagement_type, ids, this.#channel_id);
   }
 
-  #challengeExpiryAtMs(challenge?: string): number {
-    if (challenge === undefined) return Date.now();
-    const params = new URLSearchParams(challenge);
-    const issued_seconds = Number(params.get('c'));
-    const ttl_seconds = Number(params.get('t'));
-    if (isNaN(issued_seconds) || isNaN(ttl_seconds) || issued_seconds === 0) return Date.now();
-    return (issued_seconds + ttl_seconds) * 1000;
+  #clearSessionTokenCache() {
+    this.#session_token_cache = null;
+    this.#botguard.clearStudioContextConfigCache();
   }
 
-  async #getUnboundChallenge(): Promise<StudioUnboundChallenge> {
-    if (this.#unbound_challenge_cache !== undefined && this.#unbound_challenge_cache.expires_at_ms > Date.now()) return this.#unbound_challenge_cache;
-    const unbound_challenge = await this.#attGet('ENGAGEMENT_TYPE_UNBOUND');
-
-    if (!unbound_challenge.eats) throw new InnertubeError('Unbound challenge missing "eats"');
-    if (!unbound_challenge.challenge) throw new InnertubeError('Unbound challenge missing "challenge"');
-    if (!unbound_challenge.bg_challenge) throw new InnertubeError('Unbound challenge missing "bg_challenge"');
-
-    this.#unbound_challenge_cache = { 
-      bg_challenge: {
-        ...unbound_challenge.bg_challenge,
-        interpreter_url: unbound_challenge.bg_challenge.interpreter_url.private_do_not_access_or_else_safe_script_wrapped_value ?? unbound_challenge.bg_challenge.interpreter_url.private_do_not_access_or_else_trusted_resource_url_wrapped_value ?? ''
-      },
-      challenge: unbound_challenge.challenge,
-      eats: unbound_challenge.eats,
-      expires_at_ms: this.#challengeExpiryAtMs(unbound_challenge.challenge)
-    };
-    if (!this.#unbound_challenge_cache.bg_challenge.interpreter_url) throw new InnertubeError('Unbound challenge bg_challenge missing valid "interpreter_url"');
-    return this.#unbound_challenge_cache;
-  }
-
-  async #getCreatorStudioChallenge(unbound_challenge_eats: string): Promise<StudioCreatorStudioChallenge> {
-    const creator_studio_challenge = await this.#attGet('ENGAGEMENT_TYPE_CREATOR_STUDIO_ACTION', [
-      { externalChannelId: this.#channel_id }
-    ], unbound_challenge_eats);
-
-    if (!creator_studio_challenge.eats) throw new InnertubeError('Creator Studio challenge missing "eats"');
-    if (!creator_studio_challenge.challenge) throw new InnertubeError('Creator Studio challenge missing "challenge"');
-    if (!creator_studio_challenge.botguard_data) throw new InnertubeError('Creator Studio challenge missing "botguard_data"');
-
-    const interpreter_url = creator_studio_challenge.botguard_data.interpreter_url.private_do_not_access_or_else_safe_script_wrapped_value ?? creator_studio_challenge.botguard_data.interpreter_url.private_do_not_access_or_else_trusted_resource_url_wrapped_value ?? '';
-    if (!interpreter_url) throw new InnertubeError('Creator Studio challenge bg_challenge missing valid "interpreter_url"');
-    return {
-      botguard_data: {
-        ...creator_studio_challenge.botguard_data,
-        interpreter_url: interpreter_url
-      },
-      challenge: creator_studio_challenge.challenge,
-      eats: creator_studio_challenge.eats
-    };
-  }
-
-  async #getBotGuardAttestation(): Promise<BotGuardAttestationResponse> {
-    if (!this.#botguard_solver) throw new InnertubeError('BotGuard Solver is not initialized. Please setup with setBotGuardSolver()');
-    const unbound_challenge = this.#unbound_challenge_cache && this.#unbound_challenge_cache.expires_at_ms > Date.now() ? this.#unbound_challenge_cache : await this.#getUnboundChallenge();
-    if (unbound_challenge.result) return { challenge: unbound_challenge.challenge, webResponse: unbound_challenge.result };
-    const botguard_response = await this.#botguard_solver.solve(unbound_challenge.bg_challenge, unbound_challenge.challenge);
-    unbound_challenge.result = botguard_response;
-    this.#unbound_challenge_cache = unbound_challenge;
-    return { challenge: unbound_challenge.challenge, webResponse: botguard_response };
-  }
-
-  #eatForceRefreshSessionToken() {
-    const force_refresh_session_token = this.#force_refresh_session_token;
-    this.#force_refresh_session_token = false;
-    return force_refresh_session_token;
-  }
-
-  async getSessionToken(): Promise<string> {
-    if (!this.#botguard_solver) throw new InnertubeError('BotGuard Solver is not initialized. Please setup with setBotGuardSolver()');
-    if (this.#channel_id_session_token_cache && this.#channel_id_session_token_cache.expires_at_ms > Date.now() && !this.#eatForceRefreshSessionToken())
-      return this.#channel_id_session_token_cache.session_token;
-
-    const unbound_challenge = await this.#getUnboundChallenge();
-    const creator_studio_challenge = await this.#getCreatorStudioChallenge(unbound_challenge.eats);
-
-    // don't cache this result into the unbounded cache since it uses different challenge kinda
-    const botguard_response = await this.#botguard_solver.solve(unbound_challenge.bg_challenge, creator_studio_challenge.challenge);
-
-    const esr_data = await this.#actions.execute('/att/esr', { 
-      client: 'WEB_CREATOR',
-      parse: true,
-      challenge: creator_studio_challenge.challenge,
-      botguardResponse: botguard_response,
-      xguardClientStatus: 0,
-      eats: creator_studio_challenge.eats
-    });
-
-    if (!esr_data.ctx || esr_data.should_fetch_reauth_session_token === undefined) throw new InnertubeError('/att/esr did not return usable data');
-
-    let grst_ctx = esr_data.ctx;
-    let reauth_proof_token: string | undefined;
-    if (esr_data.should_fetch_reauth_session_token === true) {
-      const reauth_data = await this.#actions.execute('/security/get_web_reauth_url', {
-        client: 'WEB_CREATOR',
-        parse: true,
-        continueUrl: `${Constants.URLS.YT_STUDIO_WEB_BASE}/reauth`,
-        flow: 'REAUTH_FLOW_YT_STUDIO_COLD_LOAD',
-        ivctx: esr_data.ctx,
-        challenge: creator_studio_challenge.challenge,
-        botguardResponse: botguard_response,
-        eats: creator_studio_challenge.eats
-      });
-      if (!reauth_data.encoded_reauth_proof_token || !reauth_data.session_risk_ctx) throw new InnertubeError('/security/get_web_reauth_url did not return a reauth proof');
-      grst_ctx = reauth_data.session_risk_ctx;
-      reauth_proof_token = reauth_data.encoded_reauth_proof_token;
-    }
-
-    const grst_data = await this.#actions.execute('/ars/grst', { client: 'WEB_CREATOR', parse: true, ctx: grst_ctx, reauth_proof_token, eats: creator_studio_challenge.eats });
-    
-    if (grst_data.session_token === undefined) throw new InnertubeError('/ars/grst did not return a session token');
-    this.#channel_id_session_token_cache = {
-      session_token: grst_data.session_token,
-      expires_at_ms: unbound_challenge.expires_at_ms
-    };
-    return grst_data.session_token;
+  async #getSessionToken(): Promise<string> {
+    if (this.#session_token_cache) return this.#session_token_cache;
+    const session_token = await this.#botguard.studioSessionToken(this.#botguard_solver, this.#channel_id);
+    this.#session_token_cache = session_token;
+    return session_token;
   }
 
   #scottyHeaders(file_name: string): Record<string, string> {
@@ -585,24 +452,21 @@ export default class StudioWeb {
     return await this.#uploadToScotty('THUMBNAIL', file_name_buffer_reader, {});
   }
 
-  async managedExecute<T extends StudioManagedEndpoint>(endpoint: T, payload: object, channel_id?: string, attestation_placement: AttestationPlacement = 'none', eats?: string, is_retry = false): Promise<ParsedResponse<T>> {
-    const attestation_response_data = attestation_placement === 'none' ? undefined : await this.#getBotGuardAttestation();
+  async managedExecute<T extends StudioManagedEndpoint>(endpoint: T, payload: object, one_time_context?: PartialContext, is_retry = false): Promise<ParsedResponse<T>> {
+    const { user_one_time_context } = await this.#botguard.studioContextConfig(this.#channel_id);
 
     const data = await this.#actions.execute(endpoint, {
       client: 'WEB_CREATOR',
       parse: true,
-      session_token: await this.getSessionToken(),
-      ...payload,
-      ...(attestation_placement === 'context' ? { attestation_response_data } : {}),
-      ...(attestation_placement === 'top_level' ? { attestationResponseData: attestation_response_data } : {}),
-      ...(!eats ? {} : { eats }),
-      ...(!channel_id ? {} : { channel_id })
+      session_token: await this.#getSessionToken(),
+      one_time_context: { ...one_time_context, ...user_one_time_context },
+      ...payload
     }) as IParsedResponse;
 
-    if (data.challenge_prompt_type === 'CHALLENGE_PROMPT_TYPE_AUTHENTICATE') {
-      if (!is_retry && this.#auto_retry && channel_id !== undefined) {
-        this.#force_refresh_session_token = true;
-        return await this.managedExecute<T>(endpoint, payload, channel_id, attestation_placement, eats, true);
+    if (data.challenge_prompt?.type === 'CHALLENGE_PROMPT_TYPE_AUTHENTICATE') {
+      if (!is_retry && this.#auto_retry) {
+        this.#clearSessionTokenCache();
+        return await this.managedExecute<T>(endpoint, payload, one_time_context, true);
       }
       throw new InnertubeError('YouTube Studio is requesting an authentication challenge, likely a stale session token');
     }
@@ -620,7 +484,7 @@ export default class StudioWeb {
       newTrack: tts_track_id,
       overwrite: subtitles.overwrite ?? true,
       autoTranslate: subtitles.auto_translate ?? false
-    }, this.#channel_id);
+    });
 
     const content_update_time = created.translation?.captions_translations?.[0]?.content_update_time;
     if (content_update_time === undefined) throw new InnertubeError('create_captions did not return a contentUpdateTime');
@@ -629,7 +493,7 @@ export default class StudioWeb {
       fileType: subtitles.synced ? 'CAPTIONS_FILE_TYPE_TIMED_TEXT' : 'CAPTIONS_FILE_TYPE_TRANSCRIPT',
       fileName: subtitles.data.file_name,
       dataUri: data_uri
-    }, this.#channel_id);
+    });
 
     const updated = await this.managedExecute('/globalization/update_captions', {
       videoId: video_id,
@@ -644,7 +508,7 @@ export default class StudioWeb {
           captionsFile: { dataUri: data_uri, fileName: subtitles.data.file_name }
         }
       ]
-    }, this.#channel_id);
+    });
     return { created, parsed, updated };
   }
   #isNumberString(value: string): boolean {
@@ -755,12 +619,14 @@ export default class StudioWeb {
   }
 
   async #updateMetadata(video_id: string, payload: UpdateMetadataPayload): Promise<IMetadataUpdateResponse> {
+    const attestation_response_data = await this.#getBotGuardAttestation('ENGAGEMENT_TYPE_VIDEO_METADATA_UPDATE', [ { encryptedVideoId: video_id } ]);
     return await this.managedExecute('/video_manager/metadata_update', {
+      attestationResponseData: attestation_response_data,
       encryptedVideoId: video_id,
       videoReadMask: VIDEO_READ_MASK,
       flowType: 'MDE_FLOW_TYPE_UPLOAD',
       ...payload
-    }, this.#channel_id, 'top_level');
+    });
   }
 
   async updateVideo(video_id: string, details: Partial<UploadVideoDetails>) {
@@ -847,6 +713,8 @@ export default class StudioWeb {
 
     if (!start.resource_id) throw new InnertubeError('Scotty didn\'t resolve a resource ID');
 
+    const attestation_response_data = await this.#getBotGuardAttestation('ENGAGEMENT_TYPE_VIDEO_UPLOAD', [ { scottyResourceId: start.resource_id } ]);
+
     const created = await this.managedExecute('/upload/createvideo', {
       channelId: this.#channel_id,
       resourceId: { scottyResourceId: { id: start.resource_id } },
@@ -863,7 +731,7 @@ export default class StudioWeb {
       },
       contentLevelProtection: { enableRequiresContentLevelProtection: false },
       presumedShort: false
-    }, this.#channel_id, 'context');
+    }, { request: { attestationResponseData: attestation_response_data } });
 
     on_initial_create_video?.({ created, feedback_token: created.contents?.item()?.as(UploadFeedbackItem).continuation_token ?? null });
 
