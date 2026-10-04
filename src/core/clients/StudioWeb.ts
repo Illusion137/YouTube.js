@@ -452,21 +452,20 @@ export default class StudioWeb {
     return await this.#uploadToScotty('THUMBNAIL', file_name_buffer_reader, {});
   }
 
-  async managedExecute<T extends StudioManagedEndpoint>(endpoint: T, payload: object, one_time_context?: PartialContext, is_retry = false): Promise<ParsedResponse<T>> {
+  async managedExecute<T extends StudioManagedEndpoint>(endpoint: T, payload: object, request_context?: PartialContext['request'], is_retry = false): Promise<ParsedResponse<T>> {
     const { user_one_time_context } = await this.#botguard.studioContextConfig(this.#channel_id);
 
     const data = await this.#actions.execute(endpoint, {
       client: 'WEB_CREATOR',
       parse: true,
-      session_token: await this.#getSessionToken(),
-      one_time_context: { ...one_time_context, ...user_one_time_context },
+      one_time_context: { user: user_one_time_context.user, request: { ...request_context, sessionInfo: { token: await this.#getSessionToken() } } },
       ...payload
     }) as IParsedResponse;
 
     if (data.challenge_prompt?.type === 'CHALLENGE_PROMPT_TYPE_AUTHENTICATE') {
       if (!is_retry && this.#auto_retry) {
         this.#clearSessionTokenCache();
-        return await this.managedExecute<T>(endpoint, payload, one_time_context, true);
+        return await this.managedExecute<T>(endpoint, payload, request_context, true);
       }
       throw new InnertubeError('YouTube Studio is requesting an authentication challenge, likely a stale session token');
     }
@@ -731,7 +730,7 @@ export default class StudioWeb {
       },
       contentLevelProtection: { enableRequiresContentLevelProtection: false },
       presumedShort: false
-    }, { request: { attestationResponseData: attestation_response_data } });
+    }, { attestationResponseData: attestation_response_data });
 
     on_initial_create_video?.({ created, feedback_token: created.contents?.item()?.as(UploadFeedbackItem).continuation_token ?? null });
 
