@@ -16,7 +16,8 @@ type StudioManagedEndpoint =
   | '/video_manager/metadata_update'
   | '/upload/createvideo'
   | '/upload/feedback'
-  | '/video/delete';
+  | '/video/delete'
+  | '/creator/get_creator_videos';
 
 interface ScottyStart { upload_url: string; resource_id?: string };
 interface ScottyUploadResult { status?: string; scottyResourceId?: string };
@@ -584,8 +585,8 @@ export default class StudioWeb {
     while ((feedback = await feedback.next()) !== null);
   }
 
-  async uploadVideo(file: FileNamedBufferReader, details: Partial<UploadVideoDetails> = {}, on_scotty_progress?: (written_bytes: number, total_bytes: number) => void,
-    on_initial_create_video?: (full_created: { created: ICreateVideoResponse, feedback_token: string | null }) => any) {
+  async uploadVideo(file: FileNamedBufferReader, details: Partial<UploadVideoDetails> = {}, video_read_mask: Partial<typeof TRUE_VIDEO_READ_MASK> = TRUE_VIDEO_READ_MASK, 
+    on_scotty_progress?: (written_bytes: number, total_bytes: number) => void, on_initial_create_video?: (full_created: { created: ICreateVideoResponse, feedback_token: string | null }) => any) {
     const frontend_upload_id = `innertube_studio:${Platform.shim.uuidv4().toUpperCase()}:0`;
     const start = await this.#scottyStart(UPLOAD_TYPES_TO_START_URL['VIDEO'], file, { frontendUploadId: frontend_upload_id });
 
@@ -624,9 +625,9 @@ export default class StudioWeb {
     await chunks_uploaded;
 
     const { title: _title, tags: _tags, visibility, ...remaining_details } = details;
-    const updated = await this.updateVideo(video_id, remaining_details);
+    const updated = await this.updateVideo(video_id, remaining_details, video_read_mask);
 
-    const published = await this.publishVideo(video_id, visibility);
+    const published = await this.publishVideo(video_id, visibility, video_read_mask);
 
     return { created, updated, published };
   }
@@ -634,5 +635,15 @@ export default class StudioWeb {
   async deleteVideo(video_id: string) {
     const deletion_response = await this.managedExecute('/video/delete', { videoId: video_id });
     return deletion_response.success ?? false;
+  }
+
+  async getCreatorVideos(video_ids: string[], video_read_mask: Partial<typeof TRUE_VIDEO_READ_MASK> = TRUE_VIDEO_READ_MASK) {
+    const creator_videos = await this.managedExecute('/creator/get_creator_videos', {
+      failOnError: true,
+      videoIds: video_ids,
+      mask: video_read_mask,
+      criticalRead: false
+    });
+    return creator_videos.videos ?? [];
   }
 }

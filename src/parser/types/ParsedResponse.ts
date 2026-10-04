@@ -104,6 +104,7 @@ export interface IParsedResponse {
   video_id?: string;
   translation?: Translation;
   creator_video?: CreatorVideo;
+  videos?: CreatorVideo[];
   feedback_responses?: { isProcessed: boolean }[];
   challenge_prompt?: IYoutubeApiInnertubeChallengePrompt;
   heartbeat_server_data?: string;

@@ -613,6 +613,10 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     parsed_data.creator_video = new CreatorVideo(data.creatorEntities.wrappedVideoData.video);
   }
 
+  if (data.videos && Array.isArray(data.videos)) {
+    parsed_data.videos = data.videos.map((video) => new CreatorVideo(video));
+  }
+
   if (data.feedbackResponses) {
     parsed_data.feedback_responses = data.feedbackResponses;
   }
