@@ -224,6 +224,8 @@ export default class BotGuardManager {
    * @param channel_id - Channel ID of the target Studio session
    */
   async studioContextConfig(channel_id: string) {
+    if (this.#studio_context_config_cache[channel_id]) return this.#studio_context_config_cache[channel_id];
+
     const page_config = await this.#innertube.pageConfig('https://studio.youtube.com/');
     if (page_config.ytcfg === null || page_config.eacr_token === null) throw new InnertubeError('Failed to get ytcfg or eacr_token');
 
