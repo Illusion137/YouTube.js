@@ -13,16 +13,14 @@ export interface CreatePostResponse {
 }
 
 export default class PostManager {
-  readonly #innertube: Innertube;
   readonly #actions: Actions;
   readonly #botguard_solver: BotGuardSolver<BotGuardLogBinding>;
   readonly #botguard: BotGuardManager;
 
-  constructor(innertube: Innertube, actions: Actions, botguard_solver: BotGuardSolver<BotGuardLogBinding>) {
-    this.#innertube = innertube;
+  constructor(botguard: BotGuardManager, actions: Actions, botguard_solver: BotGuardSolver<BotGuardLogBinding>) {
     this.#actions = actions;
     this.#botguard_solver = botguard_solver;
-    this.#botguard = this.#innertube.botguard;
+    this.#botguard = botguard;
   }
 
   async #uploadImage(image: CreatePostImage, channel_id: string){
