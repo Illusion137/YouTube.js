@@ -363,7 +363,7 @@ export default class StudioWeb {
     this.#botguard.clearStudioContextConfigCache();
   }
 
-  async #getSessionToken(): Promise<string> {
+  async getSessionToken(): Promise<string> {
     if (this.#session_token_cache) return this.#session_token_cache;
     const session_token = await this.#botguard.studioSessionToken(this.#botguard_solver, this.#channel_id);
     this.#session_token_cache = session_token;
@@ -458,7 +458,7 @@ export default class StudioWeb {
     const data = await this.#actions.execute(endpoint, {
       client: 'WEB_CREATOR',
       parse: true,
-      one_time_context: { user: user_one_time_context.user, request: { ...request_context, sessionInfo: { token: await this.#getSessionToken() } } },
+      one_time_context: { user: user_one_time_context.user, request: { ...request_context, sessionInfo: { token: await this.getSessionToken() } } },
       ...payload
     }) as IParsedResponse;
 
