@@ -533,10 +533,6 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     };
   }
 
-  if (data.eats) {
-    parsed_data.eats = data.eats;
-  }
-
   if (data.ctx) {
     parsed_data.ctx = data.ctx;
   }
@@ -555,6 +551,27 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
 
   if (data.sessionToken) {
     parsed_data.session_token = data.sessionToken;
+  }
+
+  if (data.webReauthUrl) {
+    parsed_data.web_reauth_url = data.webReauthUrl;
+  }
+
+  if (data.plt) {
+    parsed_data.plt = data.plt;
+  }
+
+  if (data.requireChallenge) {
+    parsed_data.require_challenge = data.requireChallenge;
+  }
+
+  if (data.integrityToken) {
+    parsed_data.integrity_token = {
+      estimated_ttl_secs: data.integrityToken.estimatedTtlSecs, 
+      integrity_token: data.integrityToken.integrityToken, 
+      mint_refresh_threshold: data.integrityToken.mintRefreshThreshold, 
+      websafe_fallback_token: data.integrityToken.websafeFallbackToken
+    };
   }
 
   if (data.playerResponse) {
@@ -596,11 +613,11 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     parsed_data.feedback_responses = data.feedbackResponses;
   }
 
-  const challenge_prompt_type = data.responseContext?.webResponseContextExtensionData?.challenge?.type;
-  if (challenge_prompt_type) {
-    parsed_data.challenge_prompt_type = challenge_prompt_type;
+  const challenge_prompt = data.responseContext?.webResponseContextExtensionData?.challenge;
+  if (challenge_prompt) {
+    parsed_data.challenge_prompt = challenge_prompt;
   }
-
+  
   if ('pollDelayMs' in data) {
     parsed_data.poll_delay_ms = data.pollDelayMs;
   }

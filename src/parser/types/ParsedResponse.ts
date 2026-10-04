@@ -2,7 +2,8 @@ import type { Memo, ObservedArray, SuperParsedResult, YTNode } from '../helpers.
 import type {
   ReloadContinuationItemsCommand, Continuation, GridContinuation,
   ItemSectionContinuation, LiveChatContinuation, MusicPlaylistShelfContinuation, MusicShelfContinuation,
-  PlaylistPanelContinuation, SectionListContinuation, ContinuationCommand, ShowMiniplayerCommand, NavigateAction
+  PlaylistPanelContinuation, SectionListContinuation, ContinuationCommand, ShowMiniplayerCommand, NavigateAction,
+  IYoutubeApiInnertubeChallengePrompt
 } from '../index.js';
 import type Translation from '../classes/ytstudio/Translation.js';
 import type CreatorVideo from '../classes/ytstudio/CreatorVideo.js';
@@ -36,6 +37,10 @@ export interface IParsedResponse {
   session_risk_ctx?: string;
   session_token?: string;
   eats?: string;
+  web_reauth_url?: string;
+  plt?: string;
+  require_challenge?: boolean;
+  integrity_token?: IIntegrityToken;
   actions?: SuperParsedResult<YTNode>;
   actions_memo?: Memo;
   content?: YTNode;
@@ -99,7 +104,7 @@ export interface IParsedResponse {
   translation?: Translation;
   creator_video?: CreatorVideo;
   feedback_responses?: { isProcessed: boolean }[];
-  challenge_prompt_type?: 'CHALLENGE_PROMPT_TYPE_UNSPECIFIED' | 'CHALLENGE_PROMPT_TYPE_AUTHENTICATE';
+  challenge_prompt?: IYoutubeApiInnertubeChallengePrompt;
   heartbeat_server_data?: string;
   stop_heartbeat?: boolean;
   poll_delay_ms?: string;
@@ -131,6 +136,13 @@ export interface IBotguardChallenge {
 export interface IBotguardData {
   interpreter_url: ITrustedResource;
   program: string;
+}
+
+export interface IIntegrityToken {
+  estimated_ttl_secs: number;
+  integrity_token?: string;
+  mint_refresh_threshold?: number;
+  websafe_fallback_token?: string;
 }
 
 export interface IPlaybackTracking {
@@ -186,14 +198,15 @@ export type IGetTranscriptResponse = Pick<IParsedResponse, 'actions' | 'actions_
 export type IGetNotificationsMenuResponse = Pick<IParsedResponse, 'actions' | 'actions_memo'>;
 export type IUpdatedMetadataResponse = Pick<IParsedResponse, 'actions' | 'actions_memo' | 'continuation'>;
 export type IGuideResponse = Pick<IParsedResponse, 'items' | 'items_memo'>;
-export type IGetChallengeResponse = Pick<IParsedResponse, 'challenge' | 'bg_challenge' | 'botguard_data' | 'eats'>;
-export type IESRChallengeResponse = Pick<IParsedResponse, 'ctx' | 'should_fetch_reauth_session_token'>;
+export type IGetChallengeResponse = Pick<IParsedResponse, 'challenge' | 'bg_challenge' | 'botguard_data'>;
+export type IESRChallengeResponse = Pick<IParsedResponse, 'ctx' | 'should_fetch_reauth_session_token' | 'session_token'>;
 export type IGetSessionTokenResponse = Pick<IParsedResponse, 'session_token'>;
-export type IGetWebReauthURLResponse = Pick<IParsedResponse, 'encoded_reauth_proof_token' | 'session_risk_ctx'>;
+export type IGetWebReauthURLResponse = Pick<IParsedResponse, 'web_reauth_url' | 'encoded_reauth_proof_token' | 'session_risk_ctx' | 'plt' | 'require_challenge'>;
 export type IShowEngagementPanelResponse = Pick<IParsedResponse, 'content'>;
-export type ICreateCaptionsResponse = Pick<IParsedResponse, 'translation' | 'challenge_prompt_type'>;
-export type IParseCaptionsResponse = Pick<IParsedResponse, 'translation' | 'challenge_prompt_type'>;
-export type IUpdateCaptionsResponse = Pick<IParsedResponse, 'challenge_prompt_type'>;
-export type IMetadataUpdateResponse = Pick<IParsedResponse, 'creator_video' | 'challenge_prompt_type'>;
-export type ICreateVideoResponse = Pick<IParsedResponse, 'contents' | 'video_id' | 'challenge_prompt_type'>;
-export type IUploadFeedbackResponse = Pick<IParsedResponse, 'feedback_responses' | 'continuation_contents_array' | 'challenge_prompt_type'>;
+export type ICreateCaptionsResponse = Pick<IParsedResponse, 'translation' | 'challenge_prompt'>;
+export type IParseCaptionsResponse = Pick<IParsedResponse, 'translation' | 'challenge_prompt'>;
+export type IUpdateCaptionsResponse = Pick<IParsedResponse, 'challenge_prompt'>;
+export type IMetadataUpdateResponse = Pick<IParsedResponse, 'creator_video' | 'challenge_prompt'>;
+export type ICreateVideoResponse = Pick<IParsedResponse, 'contents' | 'video_id' | 'challenge_prompt'>;
+export type IUploadFeedbackResponse = Pick<IParsedResponse, 'feedback_responses' | 'continuation_contents_array' | 'challenge_prompt'>;
+export type IAttestationLog = Pick<IParsedResponse, 'integrity_token'>;

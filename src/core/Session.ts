@@ -93,7 +93,6 @@ export type Context = {
     enableSafetyMode: boolean;
     lockedSafetyMode: boolean;
     onBehalfOfUser?: string;
-    // Studio Web params
     delegationContext?: {
       externalChannelId: string,
       roleType: {
@@ -111,7 +110,6 @@ export type Context = {
   request?: {
     useSsl: boolean;
     internalExperimentFlags: any[];
-    // Studio Web params
     eats?: string;
     returnLogEntry?: boolean;
     sessionInfo?: { token: string };
@@ -124,6 +122,13 @@ export type Context = {
     };
   };
 }
+
+export type PartialContext = {
+  client?: Partial<Context['client']>;
+  user?: Partial<Context['user']>;
+  thirdParty?: Partial<Context['thirdParty']>;
+  request?: Partial<Context['request']>;
+};
 
 type ContextData = {
   hl: string;
@@ -290,6 +295,7 @@ export default class Session extends EventEmitter<SessionEvents> {
   public logged_in: boolean;
   public actions: Actions;
   public user_agent?: string;
+  public eats?: string;
 
   constructor(
     public context: Context,

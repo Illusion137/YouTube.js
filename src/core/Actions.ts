@@ -1,4 +1,5 @@
 import type {
+  IAttestationLog,
   IBrowseResponse,
   ICreateCaptionsResponse,
   ICreateVideoResponse,
@@ -28,7 +29,7 @@ import {
   UserInfo_DelegationContext_RoleType_ChannelRoleType
 } from '../../protos/generated/youtube/api/pfiinnertube/user_info.js';
 
-import type { Session } from './index.js';
+import type { Session, PartialContext } from './index.js';
 import { Constants } from '../utils/index.js';
 
 export interface ApiResponse {
@@ -68,6 +69,7 @@ export type ParsedResponse<T> =
   T extends '/video_manager/metadata_update' ? IMetadataUpdateResponse :
   T extends '/upload/createvideo' ? ICreateVideoResponse :
   T extends '/upload/feedback' ? IUploadFeedbackResponse :
+  T extends '/att/log' ? IAttestationLog :
   IParsedResponse;
 
 export default class Actions {
@@ -110,21 +112,24 @@ export default class Actions {
     parse: true;
     protobuf?: false;
     serialized_data?: any;
-    skip_auth_check?: boolean
+    skip_auth_check?: boolean;
+    one_time_context?: PartialContext;
   }): Promise<ParsedResponse<T>>;
   async execute<T extends InnertubeEndpoint>(endpoint: T, args?: {
     [key: string]: any;
     parse?: false;
     protobuf?: true;
     serialized_data?: any;
-    skip_auth_check?: boolean
+    skip_auth_check?: boolean;
+    one_time_context?: PartialContext;
   }): Promise<ApiResponse>;
   async execute<T extends InnertubeEndpoint>(endpoint: T, args?: {
     [key: string]: any;
     parse?: boolean;
     protobuf?: boolean;
     serialized_data?: any;
-    skip_auth_check?: boolean
+    skip_auth_check?: boolean;
+    one_time_context?: PartialContext;
   }): Promise<ParsedResponse<T> | ApiResponse> {
     let data;
 
@@ -173,51 +178,9 @@ export default class Actions {
         data.isAudioOnly = true;
       }
 
-      delete this.session.context.request?.returnLogEntry;
-      delete this.session.context.request?.eats;
-      delete this.session.context.request?.reauthRequestInfo;
-      delete this.session.context.request?.sessionInfo;
-      delete this.session.context.request?.attestationResponseData;
-      delete this.session.context.user?.delegationContext;
-      delete this.session.context.user?.serializedDelegationContext;
       if (data?.client === 'WEB_CREATOR') {
-        if (this.session.context.request) { // should just be true
-          // TODO maybe I want to manually fetch the initial eats; but it seems that it doesn't matter to much...
-          if (data?.eats) {
-            this.session.context.request.eats = data?.eats;
-            delete data?.eats;
-          } else {
-            this.session.context.request.eats = Constants.CLIENTS.WEB_CREATOR.EATS;
-          }
-
-          if (data.reauth_proof_token) {
-            this.session.context.request.reauthRequestInfo = { encodedReauthProofToken: data.reauth_proof_token };
-            delete data.reauth_proof_token;
-          }
-
-          if (data.session_token) {
-            this.session.context.request.sessionInfo = { token: data.session_token };
-            delete data.session_token;
-          }
-
-          if (data.attestation_response_data && Reflect.has(data.attestation_response_data, 'challenge') && Reflect.has(data.attestation_response_data, 'webResponse')) {
-            this.session.context.request.attestationResponseData = data.attestation_response_data;
-          }
-
-          if (data.channel_id && this.session.context.user) {
-            const delegation_context = {
-              externalChannelId: data.channel_id,
-              // ?? Not to sure when this is ever not 'CREATOR_CHANNEL_ROLE_TYPE_OWNER', but if it can be else-things then gotta fetch it...
-              roleType: { channelRoleType: 'CREATOR_CHANNEL_ROLE_TYPE_OWNER' as const }
-            };
-
-            this.session.context.user.delegationContext = delegation_context;
-            this.session.context.user.serializedDelegationContext = u8ToBase64(UserInfo_DelegationContext.encode({
-              externalChannelId: delegation_context.externalChannelId,
-              roleType: { channelRoleType: UserInfo_DelegationContext_RoleType_ChannelRoleType.CREATOR_CHANNEL_ROLE_TYPE_OWNER }
-            }).finish());
-          }
-        }
+        if (!data.one_time_context) data.one_time_context = {};
+        data.one_time_context.request = { eats: this.session.eats, ...data.one_time_context?.request };
       }
     } else if (args) {
       data = args.serialized_data;
@@ -235,19 +198,11 @@ export default class Actions {
       }
     });
 
-    // YouTube Studio Web Context Cleanup
-    {
-      delete this.session.context.request?.returnLogEntry;
-      delete this.session.context.request?.eats;
-      delete this.session.context.request?.reauthRequestInfo;
-      delete this.session.context.request?.sessionInfo;
-      delete this.session.context.request?.attestationResponseData;
-      delete this.session.context.user?.delegationContext;
-      delete this.session.context.user?.serializedDelegationContext;
-    }
+    const response_json = await response.json();
+    if (response_json?.eats) this.session.eats = response_json.eats;
 
     if (args?.parse) {
-      let parsed_response = Parser.parseResponse<ParsedResponse<T>>(await response.json());
+      let parsed_response = Parser.parseResponse<ParsedResponse<T>>(response_json);
 
       // Handle redirects
       if (this.#isBrowse(parsed_response) && parsed_response.on_response_received_actions?.[0]?.type === 'navigateAction') {
@@ -264,7 +219,7 @@ export default class Actions {
     return {
       success: response.ok,
       status_code: response.status,
-      data: await response.json()
+      data: response_json
     };
   }
 

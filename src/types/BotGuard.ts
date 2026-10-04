@@ -1,18 +1,24 @@
-export interface BotGuardChallenge {
-  program: string;
-  global_name: string;
-  interpreter_hash?: string;
-  interpreter_url: string;
+import type { AttIdsRaw } from '../parser/classes/commands/RunAttestationCommand.js';
+import type { IBotguardChallenge, IGetChallengeResponse } from '../parser/index.js';
+import type { EngagementType } from './Misc.js';
+
+export interface BotGuardSolverChallenge extends IBotguardChallenge {
+  ytcfg?: Record<string, unknown>;
 }
-// TODO, make this more comprehensive
-export interface AttestationBinding {
-  // challenge
+
+export interface BotGuardChallengeInfo extends Pick<Required<IGetChallengeResponse>, 'bg_challenge' | 'challenge'> {
+  bg_challenge: BotGuardSolverChallenge;
+}
+
+export interface BotGuardLogBinding extends AttIdsRaw {
   c: string;
-  // engagement_type
-  e?: string;
-  externalChannelId?: string;
-  encryptedVideoId?: string;
+  e: EngagementType;
 }
+
+export interface BotGuardSessionTokenBinding {
+  atr_challenge: string;
+}
+
 export interface BotGuardSolver<T> {
-  solve: (botguard_challenge: BotGuardChallenge, binding: T) => Promise<string>;
+  solve: (botguard_challenge: BotGuardSolverChallenge, binding: T) => Promise<string>;
 }
