@@ -32,256 +32,112 @@ interface UploadSubtitlesResponse {
 
 interface UploadFeedbackResult { contents: UploadFeedbackItem[], next: () => Promise<UploadFeedbackResult | null> };
 
-const VIDEO_READ_MASK = {
-  metadataLanguage: {
-    all: true
-  },
-  notification: {
-    all: true
-  },
+const TRUE_VIDEO_READ_MASK = {
+  metadataLanguage: { all: true },
+  notification: { all: true },
   status: true,
-  statusDetails: {
-    all: true
-  },
-  ownedClaimDetails: {
-    all: true
-  },
-  thumbnailDetails: {
-    all: true
-  },
+  statusDetails: { all: true },
+  ownedClaimDetails: { all: true },
+  thumbnailDetails: { all: true },
   videoId: true,
-  permissions: {
-    all: true
-  },
+  permissions: { all: true },
   origin: true,
   inlineEditProcessingStatus: true,
-  monetization: {
-    all: true
-  },
-  allRestrictions: {
-    all: true
-  },
-  videoPrechecks: {
-    all: true
-  },
-  audienceRestriction: {
-    all: true
-  },
-  mfkSettings: {
-    all: true
-  },
-  selfCertification: {
-    all: true
-  },
+  monetization: { all: true },
+  allRestrictions: { all: true },
+  videoPrechecks: { all: true },
+  audienceRestriction: { all: true },
+  mfkSettings: { all: true },
+  selfCertification: { all: true },
   videoStreamUrl: true,
-  visibility: {
-    all: true
-  },
-  shorts: {
-    all: true
-  },
-  responseStatus: {
-    all: true
-  },
+  visibility: { all: true },
+  shorts: { all: true },
+  responseStatus: { all: true },
   contentType: true,
   channelId: true,
-  features: {
-    all: true
-  },
+  features: { all: true },
   draftStatus: true,
-  brandDealVideoLink: {
-    all: true
-  },
-  activeBrandDealVideoLinks: {
-    all: true
-  },
-  audioLanguage: {
-    all: true
-  },
-  videoAdvertiserSpecificAgeGates: {
-    all: true
-  },
-  claimDetails: {
-    all: true
-  },
+  brandDealVideoLink: { all: true },
+  activeBrandDealVideoLinks: { all: true },
+  audioLanguage: { all: true },
+  videoAdvertiserSpecificAgeGates: { all: true },
+  claimDetails: { all: true },
   commentsDisabledInternally: true,
-  livestream: {
-    all: true
-  },
-  music: {
-    all: true
-  },
-  premiere: {
-    all: true
-  },
+  livestream: { all: true },
+  music: { all: true },
+  premiere: { all: true },
   timePublishedSeconds: true,
   uncaptionedReason: true,
-  remix: {
-    all: true
-  },
-  contentOwnershipModelSettings: {
-    all: true
-  },
-  creatorInitiatedVideoChannelLinks: {
-    all: true
-  },
-  releaseInfo: {
-    all: true
-  },
-  podcastRssMetadata: {
-    all: true
-  },
-  googleAdsVideoLinks: {
-    all: true
-  },
-  alteredContentSettings: {
-    all: true
-  },
-  collaboration: {
-    all: true
-  },
-  videoResolutions: {
-    all: true
-  },
-  publicLivestream: {
-    all: true
-  },
-  publicPremiere: {
-    all: true
-  },
-  thumbnailEditorState: {
-    all: true
-  },
+  remix: { all: true },
+  contentOwnershipModelSettings: { all: true },
+  creatorInitiatedVideoChannelLinks: { all: true },
+  releaseInfo: { all: true },
+  podcastRssMetadata: { all: true },
+  googleAdsVideoLinks: { all: true },
+  alteredContentSettings: { all: true },
+  collaboration: { all: true },
+  videoResolutions: { all: true },
+  publicLivestream: { all: true },
+  publicPremiere: { all: true },
+  thumbnailEditorState: { all: true },
   title: true,
-  videoCreatorExperiment: {
-    all: true
-  },
+  videoCreatorExperiment: { all: true },
   lengthSeconds: true,
-  tvfilmMetadata: {
-    all: true
-  },
+  tvfilmMetadata: { all: true },
   privacy: true,
   shareUrl: true,
-  scheduledPublishingDetails: {
-    all: true
-  },
-  privateShare: {
-    all: true
-  },
-  sponsorsOnly: {
-    all: true
-  },
-  superfansOnly: {
-    all: true
-  },
+  scheduledPublishingDetails: { all: true },
+  privateShare: { all: true },
+  sponsorsOnly: { all: true },
+  superfansOnly: { all: true },
   unlistedExpired: true,
-  videoTrailers: {
-    all: true
-  },
+  videoTrailers: { all: true },
   isPaygated: true,
-  suggestions: {
-    all: true
-  },
-  tvType: {
-    all: true
-  },
-  genres: {
-    all: true
-  },
-  episode: {
-    all: true
-  },
-  titleDetails: {
-    all: true
-  },
-  copyrightSummary: {
-    all: true
-  },
-  productSelection: {
-    all: true
-  },
-  productAutotaggingSettings: {
-    all: true
-  },
-  videoLinkageShortsAttribution: {
-    all: true
-  },
-  academicLearning: {
-    all: true
-  },
+  suggestions: { all: true },
+  tvType: { all: true },
+  genres: { all: true },
+  episode: { all: true },
+  titleDetails: { all: true },
+  copyrightSummary: { all: true },
+  productSelection: { all: true },
+  productAutotaggingSettings: { all: true },
+  videoLinkageShortsAttribution: { all: true },
+  academicLearning: { all: true },
   allowEmbed: true,
   allowRatings: true,
   ageRestriction: true,
   category: true,
   commentFilter: true,
-  commentSettings: {
-    all: true
-  },
+  commentSettings: { all: true },
   crowdsourcingEnabled: true,
-  dateRecorded: {
-    all: true
-  },
+  dateRecorded: { all: true },
   defaultCommentSortOrder: true,
   description: true,
-  descriptionFormattedString: {
-    all: true
-  },
-  gameTitle: {
-    all: true
-  },
+  descriptionFormattedString: { all: true },
+  gameTitle: { all: true },
   license: true,
-  liveChat: {
-    all: true
-  },
-  location: {
-    all: true
-  },
+  liveChat: { all: true },
+  location: { all: true },
   paidProductPlacement: true,
-  paidPoliticalContent: {
-    all: true
-  },
-  publishing: {
-    all: true
-  },
-  tags: {
-    all: true
-  },
-  titleFormattedString: {
-    all: true
-  },
+  paidPoliticalContent: { all: true },
+  publishing: { all: true },
+  tags: { all: true },
+  titleFormattedString: { all: true },
   videoDurationMs: true,
   viewCountIsHidden: true,
-  autoChapterSettings: {
-    all: true
-  },
-  autoPlacesMentionedSettings: {
-    all: true
-  },
-  videoArtworkEditorState: {
-    all: true
-  },
-  learningConceptSettings: {
-    all: true
-  },
-  videoEditorProject: {
-    videoDimensions: {
-      all: true
-    }
-  },
+  autoChapterSettings: { all: true },
+  autoPlacesMentionedSettings: { all: true },
+  videoArtworkEditorState: { all: true },
+  learningConceptSettings: { all: true },
+  videoEditorProject: { videoDimensions: { all: true } },
   originalFilename: true,
   timeCreatedSeconds: true,
-  files: {
-    all: true
-  },
-  adSettings: {
-    all: true
-  },
+  files: { all: true },
+  adSettings: { all: true },
   monetizedStatus: true,
   serializedShareEntity: true,
-  publicMetrics: {
-    all: true
-  }
-} as const;
+  publicMetrics: { all: true }
+};
 
 const CREATOR_VIDEO_CATEGORY_IDS = {
   FILM: 1, AUTOS: 2, MUSIC: 10, PETS: 15, SPORTS: 17, TRAVEL: 19, GADGETS: 20,
