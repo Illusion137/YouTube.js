@@ -5,8 +5,9 @@ import Innertube, { type Types } from 'youtubei.js';
 import path from "path";
 import fs from 'fs/promises';
 import { get_cookies } from 'cookie-eater';
+import type { BotGuardLogBinding, BotGuardSessionTokenBinding } from "../../../dist/src/types";
 
-export const botguard_solver: Types.BotGuardSolver<string> = {
+export const botguard_solver: Types.BotGuardSolver<BotGuardSessionTokenBinding|BotGuardLogBinding> = {
   solve: async(botguard_challenge, binding) => {
     const virtual_console = new VirtualConsole();
     const dom = new JSDOM('<!DOCTYPE html><html lang="en"><head><title></title></head><body></body></html>', { url: "https://www.youtube.com", referrer: "https://www.youtube.com/", userAgent: USER_AGENT, resources: "usable", runScripts: "dangerously", virtualConsole: virtual_console });
@@ -19,7 +20,7 @@ export const botguard_solver: Types.BotGuardSolver<string> = {
 
     Object.defineProperty(dom.window.HTMLCanvasElement.prototype, "getContext", { value: () => null, writable: true });
 
-    let interpreter_url = botguard_challenge.interpreter_url ?? "";
+    let interpreter_url = botguard_challenge.interpreter_url.private_do_not_access_or_else_safe_script_wrapped_value ?? botguard_challenge.interpreter_url.private_do_not_access_or_else_trusted_resource_url_wrapped_value ?? "";
 
     if (interpreter_url.startsWith("//")) interpreter_url = `https:${interpreter_url}`;
 
@@ -30,7 +31,7 @@ export const botguard_solver: Types.BotGuardSolver<string> = {
 
     const botguard = await BotGuardClient.create({ program: botguard_challenge.program, globalName: botguard_challenge.global_name, globalObject: globalThis });
 
-    const botguard_response = await botguard.snapshot({ contentBinding: { atr_challenge: binding } });
+    const botguard_response = await botguard.snapshot({ contentBinding: binding });
     return botguard_response;
   }
 };

@@ -11,8 +11,7 @@ const SRT_FILE_PATH = ""; // ?? Place your srt file path here
 
   const CHANNEL_ID = await get_channel_id(yt);
 
-  const yt_studio_web = yt.studioWeb(CHANNEL_ID);
-  yt_studio_web.setBotGuardSolver(botguard_solver);
+  const yt_studio_web = yt.studioWeb(botguard_solver, CHANNEL_ID);
 
   console.log('creating...');
 
