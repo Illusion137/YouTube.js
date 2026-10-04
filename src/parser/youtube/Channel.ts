@@ -312,6 +312,11 @@ export default class Channel extends TabbedFeed<IBrowseResponse> {
     return new Channel(this.actions, tab.page, true);
   }
 
+  async getShows(): Promise<Channel> {
+    const tab = await this.getTabByURL('shows');
+    return new Channel(this.actions, tab.page, true);
+  }
+
   async getPlaylists(): Promise<Channel> {
     const tab = await this.getTabByURL('playlists');
     return new Channel(this.actions, tab.page, true);
@@ -400,6 +405,10 @@ export default class Channel extends TabbedFeed<IBrowseResponse> {
 
   get has_courses(): boolean {
     return this.hasTabWithURL('courses');
+  }
+
+  get has_shows(): boolean {
+    return this.hasTabWithURL('shows');
   }
 
   get has_playlists(): boolean {
