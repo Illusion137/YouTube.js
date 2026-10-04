@@ -186,7 +186,7 @@ export default class BotGuardManager {
   }
 
   /**
-   * Fetches a challenge and logs its attestation.
+   * Fetches an integrity token.
    * @param botguard_solver - The BotGuard challenge solver
    */
   async fetchIntegrityToken(botguard_solver: BotGuardSolver<BotGuardLogBinding>) {
@@ -210,10 +210,17 @@ export default class BotGuardManager {
     });
   }
 
+  /**
+   * Clears the entire studio context-config cache
+   */
   clearStudioContextConfigCache() {
     this.#studio_context_config_cache = {};
   }
 
+  /**
+   * Gets both the user context and the `page_config` for YouTube Studio
+   * @param channel_id - Channel ID of the target Studio session
+   */
   async studioContextConfig(channel_id: string) {
     const page_config = await this.#innertube.pageConfig('https://studio.youtube.com/');
     if (page_config.ytcfg === null || page_config.eacr_token === null) throw new InnertubeError('Failed to get ytcfg or eacr_token');
