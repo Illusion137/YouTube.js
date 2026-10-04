@@ -23,9 +23,12 @@ export interface UploadVideoDetails {
   description?: string;
   thumbnail?: FileNamedBufferReader;
   playlists?: string[];
-  audience?: 'MADE_FOR_KIDS'|'NOT_MADE_FOR_KIDS';
+  audience?: 'MADE_FOR_KIDS'|'NOT_MADE_FOR_KIDS'|'UNSET';
+  targeted_audience?: 'ALL'|'CROSSWALK'|'AGE_RESTRICTED'|'UNSET';
+  age_restriction?: boolean;
 
   paid_promotion?: boolean;
+  paid_political_content?: boolean;
   ai_use?: boolean;
 
   collaboration_channels?: {
@@ -36,14 +39,19 @@ export interface UploadVideoDetails {
   automatic_chapters?: boolean;
   featured_places?: boolean;
   automatic_concepts?: boolean;
+  automatic_summary?: boolean;
+  automatic_products?: boolean;
+  show_view_count?: boolean;
+  allow_audio_only_use?: boolean;
   tags?: string[];
+  hide_hashtag_suggestions?: boolean;
   
   video_language?: string;
   caption_certification?: string;
   title_and_description_language?: string;
 
-  recording_date?: Date;
-  video_location?: string;
+  recording_date?: Date | null;
+  video_location?: string | null;
 
   license?: string;
   allow_embedding?: boolean;

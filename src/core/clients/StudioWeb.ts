@@ -390,13 +390,36 @@ export default class StudioWeb {
     if (details.description !== undefined) payload.description = { newDescription: details.description, descriptionOperation: 'MDE_TEXT_UPDATE_OPERATION_SET' };
     if (details.tags !== undefined) payload.tags = { newTags: details.tags };
     if (details.playlists !== undefined) payload.addToPlaylist = { addToPlaylistIds: details.playlists, deleteFromPlaylistIds: [] };
+    if (details.hide_hashtag_suggestions !== undefined) payload.suggestionMetadata = { hideHashtagSuggestions: details.hide_hashtag_suggestions };
     if (details.audience !== undefined) {
-      payload.madeForKids = {
-        operation: 'MDE_MADE_FOR_KIDS_UPDATE_OPERATION_SET',
-        newMfk: details.audience === 'MADE_FOR_KIDS' ? 'MDE_MADE_FOR_KIDS_TYPE_MFK' : 'MDE_MADE_FOR_KIDS_TYPE_NOT_MFK'
+      payload.madeForKids = details.audience === 'UNSET'
+        ? { operation: 'MDE_MADE_FOR_KIDS_UPDATE_OPERATION_CLEAR' }
+        : {
+          operation: 'MDE_MADE_FOR_KIDS_UPDATE_OPERATION_SET',
+          newMfk: details.audience === 'MADE_FOR_KIDS' ? 'MDE_MADE_FOR_KIDS_TYPE_MFK' : 'MDE_MADE_FOR_KIDS_TYPE_NOT_MFK'
+        };
+    }
+    if (details.targeted_audience !== undefined) {
+      payload.targetedAudience = details.targeted_audience === 'UNSET'
+        ? { operation: 'MDE_TARGETED_AUDIENCE_UPDATE_OPERATION_CLEAR' }
+        : { operation: 'MDE_TARGETED_AUDIENCE_UPDATE_OPERATION_SET', newTargetedAudience: `MDE_TARGETED_AUDIENCE_TYPE_${details.targeted_audience}` };
+    }
+    if (details.age_restriction !== undefined) {
+      payload.racy = {
+        operation: 'MDE_RACY_UPDATE_OPERATION_SET',
+        newRacy: details.age_restriction ? 'MDE_RACY_TYPE_RESTRICTED' : 'MDE_RACY_TYPE_NOT_RESTRICTED'
       };
     }
-    if (details.paid_promotion !== undefined) payload.productPlacement = { newHasPaidProductPlacement: details.paid_promotion };
+    if (details.paid_promotion !== undefined || details.paid_political_content !== undefined) {
+      const product_placement: UpdateMetadataPayload = {};
+      if (details.paid_promotion !== undefined) {
+        product_placement.newHasPaidProductPlacement = details.paid_promotion;
+        product_placement.newShowPaidProductPlacementOverlay = details.paid_promotion;
+        product_placement.newIsPaidProductPlacementSelfDeclaredDefinitive = true;
+      }
+      if (details.paid_political_content !== undefined) product_placement.newHasPaidPoliticalContent = details.paid_political_content;
+      payload.productPlacement = product_placement;
+    }
     if (details.ai_use !== undefined) {
       payload.alteredContent = {
         operation: 'MDE_ALTERED_CONTENT_UPDATE_OPERATION_SET',
@@ -413,12 +436,18 @@ export default class StudioWeb {
     if (details.automatic_chapters !== undefined) payload.autoChapter = { creatorOptOut: !details.automatic_chapters };
     if (details.featured_places !== undefined) payload.autoPlaces = { creatorOptOut: !details.featured_places };
     if (details.automatic_concepts !== undefined) payload.learningConcepts = { autoConceptsCreatorOptOut: !details.automatic_concepts };
+    if (details.automatic_summary !== undefined) payload.autoSummary = { creatorOptOut: !details.automatic_summary };
+    if (details.automatic_products !== undefined) payload.autoProducts = { creatorOptOut: !details.automatic_products };
+    if (details.show_view_count !== undefined) payload.viewCountIsHidden = { hidden: !details.show_view_count };
+    if (details.allow_audio_only_use !== undefined) payload.music = { newIsLicensedForYoutubeMusic: details.allow_audio_only_use };
 
     if (details.video_language !== undefined) payload.audioLanguage = { newAudioLanguage: details.video_language };
     if (details.title_and_description_language !== undefined) payload.metadataLanguage = { newMetadataLanguage: details.title_and_description_language };
     if (details.caption_certification !== undefined) payload.captionsCertificate = { newUncaptionedReason: details.caption_certification };
 
-    if (details.recording_date !== undefined) {
+    if (details.recording_date === null) {
+      payload.recordedDate = { operation: 'MDE_RECORDED_DATE_UPDATE_OPERATION_CLEAR' };
+    } else if (details.recording_date !== undefined) {
       payload.recordedDate = {
         operation: 'MDE_RECORDED_DATE_UPDATE_OPERATION_SET',
         newRecordedDate: {
@@ -428,7 +457,9 @@ export default class StudioWeb {
         }
       };
     }
-    if (details.video_location !== undefined) {
+    if (details.video_location === null) {
+      payload.location = { operation: 'MDE_LOCATION_UPDATE_OPERATION_REMOVE_LOCATION' };
+    } else if (details.video_location !== undefined) {
       payload.location = { operation: 'MDE_LOCATION_UPDATE_OPERATION_SET_LOCATION', description: details.video_location };
     }
 
@@ -466,18 +497,18 @@ export default class StudioWeb {
     return payload;
   }
 
-  async #updateMetadata(video_id: string, payload: UpdateMetadataPayload): Promise<IMetadataUpdateResponse> {
+  async #updateMetadata(video_id: string, payload: UpdateMetadataPayload, video_read_mask: Partial<typeof TRUE_VIDEO_READ_MASK> = TRUE_VIDEO_READ_MASK): Promise<IMetadataUpdateResponse> {
     const attestation_response_data = await this.#getBotGuardAttestation('ENGAGEMENT_TYPE_VIDEO_METADATA_UPDATE', [ { encryptedVideoId: video_id } ]);
     return await this.managedExecute('/video_manager/metadata_update', {
       attestationResponseData: attestation_response_data,
       encryptedVideoId: video_id,
-      videoReadMask: VIDEO_READ_MASK,
+      videoReadMask: video_read_mask,
       flowType: 'MDE_FLOW_TYPE_UPLOAD',
       ...payload
     });
   }
 
-  async updateVideo(video_id: string, details: Partial<UploadVideoDetails>) {
+  async updateVideo(video_id: string, details: Partial<UploadVideoDetails>, video_read_mask: Partial<typeof TRUE_VIDEO_READ_MASK> = TRUE_VIDEO_READ_MASK) {
     let thumbnail_resource_id: string | undefined;
     if (details.thumbnail !== undefined) {
       const resource_id = await this.#uploadThumbnailResource(details.thumbnail);
@@ -490,7 +521,7 @@ export default class StudioWeb {
     let update_subtitles_response: UploadSubtitlesResponse | null = null;
 
     if (Object.keys(payload).length > 0) {
-      update_metadata_response = await this.#updateMetadata(video_id, payload);
+      update_metadata_response = await this.#updateMetadata(video_id, payload, video_read_mask);
     }
     if (details.subtitles !== undefined) {
       update_subtitles_response = await this.uploadSubtitles(video_id, details.subtitles, details.video_language);
@@ -498,11 +529,11 @@ export default class StudioWeb {
     return { update_metadata_response, update_subtitles_response };
   }
 
-  async publishVideo(video_id: string, visibility: StudioVisibility = 'PRIVATE') {
+  async publishVideo(video_id: string, visibility: StudioVisibility = 'PRIVATE', video_read_mask: Partial<typeof TRUE_VIDEO_READ_MASK> = TRUE_VIDEO_READ_MASK) {
     const update_metadata_response = await this.#updateMetadata(video_id, {
       privacyState: { newPrivacy: visibility },
       draftState: { operation: 'MDE_DRAFT_STATE_UPDATE_OPERATION_REMOVE_DRAFT_STATE' }
-    });
+    }, video_read_mask);
     return update_metadata_response;
   }
 
@@ -591,7 +622,6 @@ export default class StudioWeb {
 
     await chunks_uploaded;
 
-    // title and tags already went up with createvideo
     const { title: _title, tags: _tags, visibility, ...remaining_details } = details;
     const updated = await this.updateVideo(video_id, remaining_details);
 
