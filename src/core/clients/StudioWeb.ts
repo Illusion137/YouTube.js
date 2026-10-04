@@ -15,7 +15,8 @@ type StudioManagedEndpoint =
   | '/globalization/update_captions'
   | '/video_manager/metadata_update'
   | '/upload/createvideo'
-  | '/upload/feedback';
+  | '/upload/feedback'
+  | '/video/delete';
 
 interface ScottyStart { upload_url: string; resource_id?: string };
 interface ScottyUploadResult { status?: string; scottyResourceId?: string };
@@ -628,5 +629,10 @@ export default class StudioWeb {
     const published = await this.publishVideo(video_id, visibility);
 
     return { created, updated, published };
+  }
+
+  async deleteVideo(video_id: string) {
+    const deletion_response = await this.managedExecute('/video/delete', { videoId: video_id });
+    return deletion_response.success ?? false;
   }
 }

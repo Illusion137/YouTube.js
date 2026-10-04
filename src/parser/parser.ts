@@ -574,6 +574,10 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     };
   }
 
+  if (data.success) {
+    parsed_data.success = data.success;
+  }
+
   if (data.playerResponse) {
     parsed_data.player_response = parseResponse(data.playerResponse);
   }

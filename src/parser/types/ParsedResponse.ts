@@ -41,6 +41,7 @@ export interface IParsedResponse {
   plt?: string;
   require_challenge?: boolean;
   integrity_token?: IIntegrityToken;
+  success?: boolean;
   actions?: SuperParsedResult<YTNode>;
   actions_memo?: Memo;
   content?: YTNode;
