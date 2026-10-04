@@ -11,6 +11,7 @@ export type AttIds = {
   playlist_id?: string;
   external_post_id?: string;
   share_id?: string;
+  scotty_resource_id?: string;
 }
 
 export type AttIdsRaw = {
@@ -22,6 +23,7 @@ export type AttIdsRaw = {
   playlistId?: string;
   externalPostId?: string;
   shareId?: string;
+  scottyResourceId?: string;
 }
 
 export default class RunAttestationCommand extends YTNode {
@@ -45,7 +47,8 @@ export default class RunAttestationCommand extends YTNode {
         artist_id: id.artistId,
         playlist_id: id.playlistId,
         external_post_id: id.externalPostId,
-        share_id: id.shareId
+        share_id: id.shareId,
+        scotty_resource_id: id.scottyResourceId
       }));
     }
   }
