@@ -52,7 +52,7 @@ export default class BotGuardManager {
   }
 
   #innerCacheKey(engagement_type: EngagementType, ids: AttIdsRaw[], atn_page_url?: string) {
-    return engagement_type + JSON.stringify(ids) + (atn_page_url ? atn_page_url : '');
+    return engagement_type + JSON.stringify(ids) + (atn_page_url ?? '');
   }
 
   #cleanCache() {
@@ -92,7 +92,7 @@ export default class BotGuardManager {
         interpreter_hash: '',
         interpreter_url: challenge_response.botguard_data.interpreter_url,
         program: challenge_response.botguard_data.program,
-        ytcfg: ytcfg
+        ytcfg
       },
       challenge: challenge_response.challenge
     };
@@ -113,13 +113,15 @@ export default class BotGuardManager {
     this.#insertCache(botguard_challenge_info, args);
     return botguard_challenge_info;
   }
+
   async #getPageChallenge<T>(args: ChallengeFetchingArgs<T>): Promise<BotGuardChallengeInfo> {
-    if (!args.atn_page_url) throw new InnertubeError('Assertion failed; \'atn_page_url\' was supposed to not be empty');
+    // should never happen
+    if (!args.atn_page_url) throw new InnertubeError('\'atn_page_url\' is required');
     const cache_check = this.#checkCache(args);
     if (cache_check) return cache_check;
 
     const page_config = await this.#innertube.pageConfig(args.atn_page_url);
-    if (!page_config.atn && !page_config.eacr_token) throw new InnertubeError(`Was unable to find a challenge in atn_page_url: ${args.atn_page_url}`);
+    if (!page_config.atn && !page_config.eacr_token) throw new InnertubeError(`Unable to find a challenge in atn_page_url: ${args.atn_page_url}`);
     const challenge_response = page_config.atn ?? await this.#getApiChallenge({ ...args, engagement_type: 'ENGAGEMENT_TYPE_UNBOUND', eacr_token: page_config.eacr_token! });
     const botguard_challenge_info = this.#challengeResponseToBotGuardChallengeInfo(challenge_response, page_config.ytcfg ?? args.ytcfg);
 
@@ -134,7 +136,7 @@ export default class BotGuardManager {
   async getChallenge<T>(args: ChallengeFetchingArgs<T>): Promise<BotGuardChallengeInfo> {
     if (!args.atn_page_url) return await this.#getApiChallenge(args);
     return await this.#getPageChallenge(args);
-  };
+  }
 
   #normalizeChallengeSolverArgs<T>(args: ChallengeSolverArgs<T>): ChallengeSolverArgsEngagement<T> {
     if (!('run_attestation_command' in args)) return args;
