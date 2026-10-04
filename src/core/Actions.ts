@@ -11,6 +11,7 @@ import type {
   INextResponse,
   IParseCaptionsResponse,
   IParsedResponse,
+  IPlayerHeartbeatResponse,
   IPlayerResponse,
   IRawResponse,
   IResolveURLResponse,
@@ -37,7 +38,8 @@ export interface ApiResponse {
 }
 
 export type InnertubeEndpoint =
-  '/player'
+  | '/player'
+  | '/player/heartbeat'
   | '/search'
   | '/browse'
   | '/next'
@@ -49,6 +51,7 @@ export type InnertubeEndpoint =
 
 export type ParsedResponse<T> =
   T extends '/player' ? IPlayerResponse :
+  T extends '/player/heartbeat' ? IPlayerHeartbeatResponse :
   T extends '/search' ? ISearchResponse :
   T extends '/browse' ? IBrowseResponse :
   T extends '/next' ? INextResponse :
