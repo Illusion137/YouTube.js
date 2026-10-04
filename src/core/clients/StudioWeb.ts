@@ -9,8 +9,6 @@ import type BotGuardManager from '../managers/BotGuardManager.js';
 import type { StudioActionsEngagementType } from '../managers/BotGuardManager.js';
 import type { AttIdsRaw } from '../../parser/classes/commands/RunAttestationCommand.js';
 
-type AttestationPlacement = 'none' | 'context' | 'top_level';
-
 type StudioManagedEndpoint =
   | '/globalization/create_captions'
   | '/globalization/parse_captions'
@@ -18,11 +16,6 @@ type StudioManagedEndpoint =
   | '/video_manager/metadata_update'
   | '/upload/createvideo'
   | '/upload/feedback';
-
-interface StudioSessionTokenCache {
-  session_token: string;
-  expires_at_ms: number;
-};
 
 interface ScottyStart { upload_url: string; resource_id?: string };
 interface ScottyUploadResult { status?: string; scottyResourceId?: string };
