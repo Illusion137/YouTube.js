@@ -4,7 +4,6 @@ import type { AttIdsRaw } from '../../parser/classes/commands/RunAttestationComm
 import type { IGetChallengeResponse, RawNode } from '../../parser/index.js';
 import type { BotGuardChallengeInfo, BotGuardSolver, BotGuardSolverChallenge, BotGuardLogBinding, BotGuardSessionTokenBinding } from '../../types/BotGuard.js';
 import type { EngagementType, InnerTubeClient } from '../../types/Misc.js';
-import { channelUserDelegationContext } from '../../utils/Context.js';
 import { InnertubeError } from '../../utils/Utils.js';
 import type { PartialContext } from '../index.js';
 
@@ -35,10 +34,12 @@ export type StudioActionsEngagementType = Extract<EngagementType, 'ENGAGEMENT_TY
 export default class BotGuardManager {
   readonly #innertube: Innertube;
   #botguard_challenge_info_cache: Record<string, BotGuardChallengeInfo>;
+  #studio_context_config_cache: Record<string, { user_one_time_context: PartialContext, page_config: Awaited<ReturnType<Innertube['pageConfig']>> }>;
 
   constructor(innertube: Innertube) {
     this.#innertube = innertube;
     this.#botguard_challenge_info_cache = {};
+    this.#studio_context_config_cache = {};
   }
 
   #challengeExpired(challenge?: string) {
@@ -51,7 +52,7 @@ export default class BotGuardManager {
   }
 
   #innerCacheKey(engagement_type: EngagementType, ids: AttIdsRaw[], atn_page_url?: string) {
-    return engagement_type + JSON.stringify(ids) + (atn_page_url ? atn_page_url : '');
+    return engagement_type + JSON.stringify(ids) + (atn_page_url ?? '');
   }
 
   #cleanCache() {
@@ -91,7 +92,7 @@ export default class BotGuardManager {
         interpreter_hash: '',
         interpreter_url: challenge_response.botguard_data.interpreter_url,
         program: challenge_response.botguard_data.program,
-        ytcfg: ytcfg
+        ytcfg
       },
       challenge: challenge_response.challenge
     };
@@ -112,15 +113,17 @@ export default class BotGuardManager {
     this.#insertCache(botguard_challenge_info, args);
     return botguard_challenge_info;
   }
+
   async #getPageChallenge<T>(args: ChallengeFetchingArgs<T>): Promise<BotGuardChallengeInfo> {
-    if (!args.atn_page_url) throw new InnertubeError('Assertion failed; \'atn_page_url\' was supposed to not be empty');
+    // should never happen
+    if (!args.atn_page_url) throw new InnertubeError('\'atn_page_url\' is required');
     const cache_check = this.#checkCache(args);
     if (cache_check) return cache_check;
 
-    const initial_data = await this.#innertube.initialData(args.atn_page_url);
-    if (!initial_data.atn && !initial_data.eacr_token) throw new InnertubeError(`Was unable to find a challenge in atn_page_url: ${args.atn_page_url}`);
-    const challenge_response = initial_data.atn ?? await this.#getApiChallenge({ ...args, engagement_type: 'ENGAGEMENT_TYPE_UNBOUND', eacr_token: initial_data.eacr_token! });
-    const botguard_challenge_info = this.#challengeResponseToBotGuardChallengeInfo(challenge_response, initial_data.ytcfg ?? args.ytcfg);
+    const page_config = await this.#innertube.pageConfig(args.atn_page_url);
+    if (!page_config.atn && !page_config.eacr_token) throw new InnertubeError(`Unable to find a challenge in atn_page_url: ${args.atn_page_url}`);
+    const challenge_response = page_config.atn ?? await this.#getApiChallenge({ ...args, engagement_type: 'ENGAGEMENT_TYPE_UNBOUND', eacr_token: page_config.eacr_token! });
+    const botguard_challenge_info = this.#challengeResponseToBotGuardChallengeInfo(challenge_response, page_config.ytcfg ?? args.ytcfg);
 
     this.#insertCache(botguard_challenge_info, args);
     return botguard_challenge_info;
@@ -133,7 +136,7 @@ export default class BotGuardManager {
   async getChallenge<T>(args: ChallengeFetchingArgs<T>): Promise<BotGuardChallengeInfo> {
     if (!args.atn_page_url) return await this.#getApiChallenge(args);
     return await this.#getPageChallenge(args);
-  };
+  }
 
   #normalizeChallengeSolverArgs<T>(args: ChallengeSolverArgs<T>): ChallengeSolverArgsEngagement<T> {
     if (!('run_attestation_command' in args)) return args;
@@ -185,16 +188,60 @@ export default class BotGuardManager {
   }
 
   /**
-   * Fetches the attestation challenge for various YouTube Studio actions
+   * Fetches an integrity token.
+   * @param botguard_solver - The BotGuard challenge solver
    */
-  async studioAttestationChallenge(){
+  async fetchIntegrityToken(botguard_solver: BotGuardSolver<BotGuardLogBinding>) {
     const challenge = await this.getChallenge({
-      atn_page_url: 'https://studio.youtube.com/',
-      client: 'WEB_CREATOR',
+      atn_page_url: 'https://www.youtube.com/',
       engagement_type: 'ENGAGEMENT_TYPE_UNBOUND',
       ids: []
     });
-    return challenge;
+    const binding: BotGuardLogBinding = {
+      c: challenge.challenge,
+      e: 'ENGAGEMENT_TYPE_INTEGRITY_GENERATION'
+    };
+    const web_response = await botguard_solver.solve(challenge.bg_challenge, binding);
+
+    return await this.#innertube.actions.execute('/att/log', {
+      parse: true,
+      challenge: challenge.challenge,
+      engagementType: 'ENGAGEMENT_TYPE_INTEGRITY_GENERATION',
+      webResponse: web_response,
+      returnIntegrityToken: true
+    });
+  }
+
+  /**
+   * Clears the entire studio context-config cache
+   */
+  clearStudioContextConfigCache() {
+    this.#studio_context_config_cache = {};
+  }
+
+  /**
+   * Gets both the user context and the `page_config` for YouTube Studio
+   * @param channel_id - Channel ID of the target Studio session
+   */
+  async studioContextConfig(channel_id: string) {
+    const page_config = await this.#innertube.pageConfig('https://studio.youtube.com/');
+    if (page_config.ytcfg === null || page_config.eacr_token === null) throw new InnertubeError('Failed to get ytcfg or eacr_token');
+
+    const user_one_time_context: PartialContext = {
+      user: {
+        delegationContext: {
+          externalChannelId: channel_id,
+          roleType: {
+            channelRoleType: 'CREATOR_CHANNEL_ROLE_TYPE_OWNER'
+          }
+        },
+        serializedDelegationContext: (page_config.ytcfg?.INNERTUBE_CONTEXT_SERIALIZED_DELEGATION_CONTEXT as string) ?? ''
+      }
+    };
+
+    this.#studio_context_config_cache[channel_id] = { user_one_time_context, page_config };
+
+    return this.#studio_context_config_cache[channel_id];
   }
 
   /**
@@ -202,9 +249,21 @@ export default class BotGuardManager {
    * @param botguard_solver - The BotGuard challenge solver
    * @param engagement_type - The challenge engagement type
    * @param ids - The challenge ids
+   * @param channel_id - Channel ID of the target Studio session
    */
-  async studioAttestationResponseData(botguard_solver: BotGuardSolver<BotGuardLogBinding>, engagement_type: StudioActionsEngagementType, ids: AttIdsRaw[]){
-    const challenge = await this.studioAttestationChallenge();
+  async studioAttestationResponseData(botguard_solver: BotGuardSolver<BotGuardLogBinding>, engagement_type: StudioActionsEngagementType, ids: AttIdsRaw[], channel_id: string) {
+    const context_config = await this.studioContextConfig(channel_id);
+    if (context_config.page_config.ytcfg === null || context_config.page_config.eacr_token === null) throw new InnertubeError('Failed to get ytcfg or eacr_token');
+
+    const challenge = await this.getChallenge({
+      eacr_token: context_config.page_config.eacr_token,
+      ytcfg: context_config.page_config.ytcfg,
+      one_time_context: context_config.user_one_time_context,
+      client: 'WEB_CREATOR',
+      engagement_type: 'ENGAGEMENT_TYPE_UNBOUND',
+      ids: []
+    });
+
     const spread_ids = Object.assign({}, ...ids);
     const binding = {
       c: challenge.challenge,
@@ -224,15 +283,14 @@ export default class BotGuardManager {
    * @param channel_id - Channel ID of the target Studio session
    */
   async studioSessionToken(botguard_solver: BotGuardSolver<BotGuardSessionTokenBinding>, channel_id: string) {
+    const context_config = await this.studioContextConfig(channel_id);
+    if (context_config.page_config.ytcfg === null || context_config.page_config.eacr_token === null) throw new InnertubeError('Failed to get ytcfg or eacr_token');
+
     const session_token_binding_fn = (challenge: string): BotGuardSessionTokenBinding => ({ atr_challenge: challenge });
-    const user_one_time_context = { user: channelUserDelegationContext(channel_id) };
-
-    // get initial eats & cache unbound challenge
-    await this.studioAttestationChallenge();
-
+    
     const creator_studio_result = await this.run(botguard_solver, {
       content_binding: session_token_binding_fn,
-      one_time_context: user_one_time_context,
+      one_time_context: context_config.user_one_time_context,
       client: 'WEB_CREATOR',
       engagement_type: 'ENGAGEMENT_TYPE_CREATOR_STUDIO_ACTION',
       ids: [ { externalChannelId: channel_id } ]
@@ -244,7 +302,7 @@ export default class BotGuardManager {
       challenge: creator_studio_result.challenge.challenge,
       botguardResponse: creator_studio_result.web_response,
       xguardClientStatus: 0,
-      one_time_context: user_one_time_context
+      one_time_context: context_config.user_one_time_context
     });
 
     if (evaluate_session_risk_response.session_token) return evaluate_session_risk_response.session_token;
@@ -260,10 +318,10 @@ export default class BotGuardManager {
         continueUrl: 'https://studio.youtube.com/reauth',
         flow: 'REAUTH_FLOW_YT_STUDIO_COLD_LOAD',
         ivctx: evaluate_session_risk_response.ctx,
-        one_time_context: user_one_time_context
+        one_time_context: context_config.user_one_time_context
       });
 
-      if (web_reauth_url.plt) throw new InnertubeError('Session has expired, try refreshing your login credentials then try again.');
+      if (web_reauth_url.plt) throw new InnertubeError(`Session has likely expired, try refreshing your login credentials then try again. Or try to visit ${web_reauth_url.web_reauth_url}`);
       if (web_reauth_url.session_risk_ctx) grst_ctx = web_reauth_url.session_risk_ctx;
       if (web_reauth_url.encoded_reauth_proof_token) reauth_proof_token = web_reauth_url.encoded_reauth_proof_token;
     }
@@ -273,7 +331,7 @@ export default class BotGuardManager {
       client: 'WEB_CREATOR',
       ctx: grst_ctx,
       one_time_context: {
-        ...user_one_time_context,
+        ...context_config.user_one_time_context,
         request: { reauthRequestInfo: { encodedReauthProofToken: reauth_proof_token } }
       }
     });
