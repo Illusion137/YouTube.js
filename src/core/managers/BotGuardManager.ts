@@ -319,7 +319,7 @@ export default class BotGuardManager {
         one_time_context: context_config.user_one_time_context
       });
 
-      if (web_reauth_url.plt) throw new InnertubeError('Session has expired, try refreshing your login credentials then try again.');
+      if (web_reauth_url.plt) throw new InnertubeError(`Session has likely expired, try refreshing your login credentials then try again. Or try to visit ${web_reauth_url.web_reauth_url}`);
       if (web_reauth_url.session_risk_ctx) grst_ctx = web_reauth_url.session_risk_ctx;
       if (web_reauth_url.encoded_reauth_proof_token) reauth_proof_token = web_reauth_url.encoded_reauth_proof_token;
     }
