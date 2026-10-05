@@ -190,13 +190,9 @@ export default class BotGuardManager {
   /**
    * Fetches an integrity token.
    * @param botguard_solver - The BotGuard challenge solver
+   * @param challenge - The BotGuard challenge info
    */
-  async fetchIntegrityToken(botguard_solver: BotGuardSolver<BotGuardLogBinding>) {
-    const challenge = await this.getChallenge({
-      atn_page_url: 'https://www.youtube.com/',
-      engagement_type: 'ENGAGEMENT_TYPE_UNBOUND',
-      ids: []
-    });
+  async fetchIntegrityToken(botguard_solver: BotGuardSolver<BotGuardLogBinding>, challenge: BotGuardChallengeInfo) {
     const binding: BotGuardLogBinding = {
       c: challenge.challenge,
       e: 'ENGAGEMENT_TYPE_INTEGRITY_GENERATION'
