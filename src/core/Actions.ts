@@ -1,5 +1,5 @@
 import type {
-  IAttestationLog,
+  IAttestationLogResponse,
   IBrowseResponse,
   ICreateCaptionsResponse,
   ICreateVideoResponse,
@@ -65,7 +65,7 @@ export type ParsedResponse<T> =
   T extends '/video_manager/metadata_update' ? IMetadataUpdateResponse :
   T extends '/upload/createvideo' ? ICreateVideoResponse :
   T extends '/upload/feedback' ? IUploadFeedbackResponse :
-  T extends '/att/log' ? IAttestationLog :
+  T extends '/att/log' ? IAttestationLogResponse :
   T extends '/creator/list_creator_videos' ? ICreatorVideosResponse :
   T extends '/creator/list_creator_playlists' ? ICreatorPlaylistsResponse :
   T extends '/video_editor/get_audio_waveform_url' ? IGetAudioWaveformUrlResponse :
