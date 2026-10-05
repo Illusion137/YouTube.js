@@ -3,6 +3,8 @@ import type {
   IBrowseResponse,
   ICreateCaptionsResponse,
   ICreateVideoResponse,
+  ICreatorPlaylists,
+  ICreatorVideos,
   IESRChallengeResponse,
   IGetChallengeResponse,
   IGetNotificationsMenuResponse,
@@ -63,6 +65,8 @@ export type ParsedResponse<T> =
   T extends '/upload/createvideo' ? ICreateVideoResponse :
   T extends '/upload/feedback' ? IUploadFeedbackResponse :
   T extends '/att/log' ? IAttestationLog :
+  T extends '/creator/list_creator_videos' ? ICreatorVideos :
+  T extends '/creator/list_creator_playlists' ? ICreatorPlaylists :
   IParsedResponse;
 
 export default class Actions {
