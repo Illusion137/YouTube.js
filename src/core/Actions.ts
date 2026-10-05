@@ -1,5 +1,5 @@
 import type {
-  IAttestationLog,
+  IAttestationLogResponse,
   IBrowseResponse,
   IESRChallengeResponse,
   IGetChallengeResponse,
@@ -51,7 +51,7 @@ export type ParsedResponse<T> =
   T extends '/att/esr' ? IESRChallengeResponse :
   T extends '/security/get_web_reauth_url' ? IGetWebReauthURLResponse :
   T extends '/ars/grst' ? IGetSessionTokenResponse :
-  T extends '/att/log' ? IAttestationLog :
+  T extends '/att/log' ? IAttestationLogResponse :
   IParsedResponse;
 
 export default class Actions {

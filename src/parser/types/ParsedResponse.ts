@@ -193,5 +193,5 @@ export type IGetChallengeResponse = Pick<IParsedResponse, 'challenge' | 'bg_chal
 export type IESRChallengeResponse = Pick<IParsedResponse, 'ctx' | 'should_fetch_reauth_session_token' | 'session_token'>;
 export type IGetWebReauthURLResponse = Pick<IParsedResponse, 'web_reauth_url' | 'encoded_reauth_proof_token' | 'session_risk_ctx' | 'plt' | 'require_challenge'>;
 export type IGetSessionTokenResponse = Pick<IParsedResponse, 'session_token'>;
-export type IAttestationLog = Pick<IParsedResponse, 'integrity_token'>;
+export type IAttestationLogResponse = Pick<IParsedResponse, 'integrity_token'>;
 export type IShowEngagementPanelResponse = Pick<IParsedResponse, 'content'>;
