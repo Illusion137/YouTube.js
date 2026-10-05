@@ -19,7 +19,8 @@ type StudioManagedEndpoint =
   | '/video/delete'
   | '/creator/get_creator_videos'
   | '/creator/list_creator_videos'
-  | '/creator/list_creator_playlists';
+  | '/creator/list_creator_playlists'
+  | '/video_editor/get_audio_waveform_url';
 
 interface ScottyStart { upload_url: string; resource_id?: string };
 interface ScottyUploadResult { status?: string; scottyResourceId?: string };
@@ -733,5 +734,13 @@ export default class StudioWeb {
       mask: args.playlist_read_mask,
       ...(args.page_token === undefined ? {} : { pageToken: args.page_token })
     });
+  }
+
+  async getAudioWaveformUrl(video_id: string, scale_ms = 770) {
+    const response = await this.managedExecute('/video_editor/get_audio_waveform_url', {
+      externalVideoId: video_id,
+      scaleMs: scale_ms
+    });
+    return response.audio_waveform_url;
   }
 }

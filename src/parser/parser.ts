@@ -581,6 +581,10 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     parsed_data.success = data.success;
   }
 
+  if (data.audioWaveformUrl) {
+    parsed_data.audio_waveform_url = data.audioWaveformUrl;
+  }
+
   if (data.nextPageToken) {
     parsed_data.next_page_token = data.nextPageToken;
   }

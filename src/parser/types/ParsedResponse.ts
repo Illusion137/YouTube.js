@@ -46,6 +46,7 @@ export interface IParsedResponse {
   integrity_token?: IIntegrityToken;
   success?: boolean;
   next_page_token?: string;
+  audio_waveform_url?: string;
   actions?: SuperParsedResult<YTNode>;
   actions_memo?: Memo;
   content?: YTNode;
@@ -219,5 +220,6 @@ export type IMetadataUpdateResponse = Pick<IParsedResponse, 'creator_video' | 'c
 export type ICreateVideoResponse = Pick<IParsedResponse, 'contents' | 'video_id' | 'challenge_prompt'>;
 export type IUploadFeedbackResponse = Pick<IParsedResponse, 'feedback_responses' | 'continuation_contents_array' | 'challenge_prompt'>;
 export type IAttestationLog = Pick<IParsedResponse, 'integrity_token'>;
-export type ICreatorVideos = Pick<IParsedResponse, 'next_page_token' | 'videos' | 'total_size'>;
-export type ICreatorPlaylists = Pick<IParsedResponse, 'next_page_token' | 'playlists' | 'playlist_memberships' | 'total_size'>;
+export type IGetAudioWaveformUrlResponse = Pick<IParsedResponse, 'audio_waveform_url'>;
+export type ICreatorVideosResponse = Pick<IParsedResponse, 'next_page_token' | 'videos' | 'total_size'>;
+export type ICreatorPlaylistsResponse = Pick<IParsedResponse, 'next_page_token' | 'playlists' | 'playlist_memberships' | 'total_size'>;

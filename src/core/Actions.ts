@@ -3,9 +3,10 @@ import type {
   IBrowseResponse,
   ICreateCaptionsResponse,
   ICreateVideoResponse,
-  ICreatorPlaylists,
-  ICreatorVideos,
+  ICreatorPlaylistsResponse,
+  ICreatorVideosResponse,
   IESRChallengeResponse,
+  IGetAudioWaveformUrlResponse,
   IGetChallengeResponse,
   IGetNotificationsMenuResponse,
   IGetSessionTokenResponse,
@@ -65,8 +66,9 @@ export type ParsedResponse<T> =
   T extends '/upload/createvideo' ? ICreateVideoResponse :
   T extends '/upload/feedback' ? IUploadFeedbackResponse :
   T extends '/att/log' ? IAttestationLog :
-  T extends '/creator/list_creator_videos' ? ICreatorVideos :
-  T extends '/creator/list_creator_playlists' ? ICreatorPlaylists :
+  T extends '/creator/list_creator_videos' ? ICreatorVideosResponse :
+  T extends '/creator/list_creator_playlists' ? ICreatorPlaylistsResponse :
+  T extends '/video_editor/get_audio_waveform_url' ? IGetAudioWaveformUrlResponse :
   IParsedResponse;
 
 export default class Actions {
