@@ -6,13 +6,11 @@ export interface PostImage {
   base64: string;
 };
 
-/*
-  all coords 0-1
+/* all coords 0-1
   very left = 0
   very right = 1
   very top = 0
-  very bottom = 1
-*/
+  very bottom = 1 */
 export interface PreviewCoordinates {
   top: number;
   right: number;
@@ -20,7 +18,6 @@ export interface PreviewCoordinates {
   left: number;
 }
 
-// The Create Post body ----
 export interface PollAttachmentData_LocalImageSrc {
   privateDoNotAccessOrElseWrappedUrl: string;
 }
@@ -77,7 +74,6 @@ export interface CreatePostPayloadBase {
 }
 export type CreatePostPayload = CreatePostPayloadBase | (CreatePostPayloadBase & (VideoAttachment|PollAttachment|QuizAttachmentData|ImagesAttachment|PollAttachmentData));
 
-// The actual 'Create Post' interface ----
 export interface CreatePostImage {
   source: PostImage;
   preview_coordinates: PreviewCoordinates;

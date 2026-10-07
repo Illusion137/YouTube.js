@@ -6,7 +6,7 @@ import { JSDOM, VirtualConsole } from "jsdom";
 import Innertube, { type Types } from 'youtubei.js';
 import { get_cookies } from 'cookie-eater';
 
-export const botguard_solver: Types.BotGuardSolver<string> = {
+export const botguard_solver: Types.BotGuardSolver<Types.BotGuardLogBinding> = {
   solve: async(botguard_challenge, binding) => {
     const virtual_console = new VirtualConsole();
     const dom = new JSDOM('<!DOCTYPE html><html lang="en"><head><title></title></head><body></body></html>', { url: "https://www.youtube.com", referrer: "https://www.youtube.com/", userAgent: USER_AGENT, resources: "usable", runScripts: "dangerously", virtualConsole: virtual_console });
@@ -30,7 +30,7 @@ export const botguard_solver: Types.BotGuardSolver<string> = {
 
     const botguard = await BotGuardClient.create({ program: botguard_challenge.program, globalName: botguard_challenge.global_name, globalObject: globalThis });
 
-    const botguard_response = await botguard.snapshot({ contentBinding: { atr_challenge: binding } });
+    const botguard_response = await botguard.snapshot({ contentBinding: { binding } });
     return botguard_response;
   }
 };

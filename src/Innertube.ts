@@ -652,8 +652,8 @@ export default class Innertube {
   /**
    * An interface for managing posts.
    */
-  posts(botguard_solver: BotGuardSolver<BotGuardLogBinding>) {
-    return new PostManager(this.botguard, this.#session.actions, botguard_solver);
+  posts(botguard_solver: BotGuardSolver<BotGuardLogBinding>, channel_id: string) {
+    return new PostManager(this.botguard, this.#session.actions, botguard_solver, channel_id);
   }
 
   /**
