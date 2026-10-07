@@ -84,8 +84,33 @@ export type Context = {
         enabledCategories: string[];
       };
       contentSettings: {
-        corpusPreference: string;
-        kidsNoSearchMode: string;
+        ageUpMode?:
+          | 'YT_KIDS_AGE_UP_MODE_OFF'
+          | 'YT_KIDS_AGE_UP_MODE_TWEEN'
+          | 'YT_KIDS_AGE_UP_MODE_PRESCHOOL';
+        contentDensity?:
+          | 'KIDS_CONTENT_DENSITY_SPARSE'
+          | 'KIDS_CONTENT_DENSITY_DENSE';
+        corpusAgeTarget?:
+          | 'KIDS_CORPUS_AGE_TARGET_PRESCHOOL'
+          | 'KIDS_CORPUS_AGE_TARGET_YOUNGER'
+          | 'KIDS_CORPUS_AGE_TARGET_TWEEN';
+        corpusPreference?:
+          | 'KIDS_CORPUS_PREFERENCE_YOUNGER'
+          | 'KIDS_CORPUS_PREFERENCE_TWEEN'
+          | 'KIDS_CORPUS_PREFERENCE_PAM_YOUNGER'
+          | 'KIDS_CORPUS_PREFERENCE_PAM_TWEEN'
+          | 'KIDS_CORPUS_PREFERENCE_PRESCHOOL'
+          | 'KIDS_CORPUS_PREFERENCE_SUPEX_MEDIUM'
+          | 'KIDS_CORPUS_PREFERENCE_SUPEX_LARGE'
+          | 'KIDS_CORPUS_PREFERENCE_SUPEX_SMALL';
+        corpusRestriction?:
+          | 'KIDS_CORPUS_RESTRICTION_PARENT_APPROVED_ONLY'
+          | 'KIDS_CORPUS_RESTRICTION_HUMAN_CURATED'
+          | 'KIDS_CORPUS_RESTRICTION_ALGO';
+        kidsNoSearchMode?:
+          | 'YT_KIDS_NO_SEARCH_MODE_OFF'
+          | 'YT_KIDS_NO_SEARCH_MODE_ON';
       };
     };
   };

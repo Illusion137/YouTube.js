@@ -3,8 +3,23 @@ import { Channel, HomeFeed, Search, VideoInfo } from '../../parser/ytkids/index.
 import NavigationEndpoint from '../../parser/classes/NavigationEndpoint.js';
 import KidsBlocklistPickerItem from '../../parser/classes/ytkids/KidsBlocklistPickerItem.js';
 import { InnertubeError, generateRandomString } from '../../utils/Utils.js';
-import type { Session, ApiResponse } from '../index.js';
+import type { Session, ApiResponse, Context, PartialContext } from '../index.js';
 import type { GetVideoInfoOptions } from '../../types/index.js';
+
+type KidsAppInfo = Context['client']['kidsAppInfo'];
+const DEFAULT_KIDS_APP_INFO: KidsAppInfo = {
+  categorySettings: {
+    enabledCategories: [
+      'approved_for_you', 'black_joy', 'camp', 'collections', 'earth', 'explore',
+      'favorites', 'gaming', 'halloween', 'hero', 'learning', 'move', 'music',
+      'reading', 'shared_by_parents', 'shows', 'soccer', 'sports', 'spotlight', 'winter'
+    ]
+  },
+  contentSettings: {
+    corpusPreference: 'KIDS_CORPUS_PREFERENCE_YOUNGER',
+    kidsNoSearchMode: 'YT_KIDS_NO_SEARCH_MODE_OFF'
+  }
+} as const;
 
 export default class Kids {
   #session: Session;
@@ -13,13 +28,17 @@ export default class Kids {
     this.#session = session;
   }
 
-  async search(query: string): Promise<Search> {
+  #oneTimeContext(kids_app_info: KidsAppInfo): PartialContext {
+    return { client: { kidsAppInfo: kids_app_info } };
+  }
+
+  async search(query: string, kids_app_info: KidsAppInfo = DEFAULT_KIDS_APP_INFO): Promise<Search> {
     const search_endpoint = new NavigationEndpoint({ searchEndpoint: { query } });
-    const response = await search_endpoint.call(this.#session.actions, { client: 'YTKIDS' });
+    const response = await search_endpoint.call(this.#session.actions, { client: 'YTKIDS', one_time_context: this.#oneTimeContext(kids_app_info) });
     return new Search(this.#session.actions, response);
   }
 
-  async getInfo(video_id: string, options?: Omit<GetVideoInfoOptions, 'client'>): Promise<VideoInfo> {
+  async getInfo(video_id: string, options?: Omit<GetVideoInfoOptions, 'client'>, kids_app_info: KidsAppInfo = DEFAULT_KIDS_APP_INFO): Promise<VideoInfo> {
     const payload = { videoId: video_id };
     const watch_endpoint = new NavigationEndpoint({ watchEndpoint: payload });
     const watch_next_endpoint = new NavigationEndpoint({ watchNextEndpoint: payload });
@@ -35,7 +54,8 @@ export default class Kids {
           signatureTimestamp: session.player?.signature_timestamp
         }
       },
-      client: 'YTKIDS'
+      client: 'YTKIDS',
+      one_time_context: this.#oneTimeContext(kids_app_info)
     };
 
     if (options?.po_token) {
@@ -50,7 +70,7 @@ export default class Kids {
     
     const watch_response = watch_endpoint.call(session.actions, extra_payload);
 
-    const watch_next_response = watch_next_endpoint.call(session.actions, { client: 'YTKIDS' });
+    const watch_next_response = watch_next_endpoint.call(session.actions, { client: 'YTKIDS', one_time_context: this.#oneTimeContext(kids_app_info) });
 
     const response = await Promise.all([ watch_response, watch_next_response ]);
     const cpn = generateRandomString(16);
@@ -58,15 +78,16 @@ export default class Kids {
     return new VideoInfo(response, session.actions, cpn);
   }
 
-  async getChannel(channel_id: string): Promise<Channel> {
+  async getChannel(channel_id: string, kids_app_info: KidsAppInfo = DEFAULT_KIDS_APP_INFO): Promise<Channel> {
+    const context: PartialContext = { client: { kidsAppInfo: kids_app_info } };
     const browse_endpoint = new NavigationEndpoint({ browseEndpoint: { browseId: channel_id } });
-    const response = await browse_endpoint.call(this.#session.actions, { client: 'YTKIDS' });
+    const response = await browse_endpoint.call(this.#session.actions, { client: 'YTKIDS', one_time_context: this.#oneTimeContext(kids_app_info) });
     return new Channel(this.#session.actions, response);
   }
 
-  async getHomeFeed(): Promise<HomeFeed> {
+  async getHomeFeed(kids_app_info: KidsAppInfo = DEFAULT_KIDS_APP_INFO): Promise<HomeFeed> {
     const browse_endpoint = new NavigationEndpoint({ browseEndpoint: { browseId: 'FEkids_home' } });
-    const response = await browse_endpoint.call(this.#session.actions, { client: 'YTKIDS' });
+    const response = await browse_endpoint.call(this.#session.actions, { client: 'YTKIDS', one_time_context: this.#oneTimeContext(kids_app_info) });
     return new HomeFeed(this.#session.actions, response);
   }
 
@@ -74,9 +95,10 @@ export default class Kids {
    * Retrieves the list of supervised accounts that the signed-in user has
    * access to, and blocks the given channel for each of them.
    * @param channel_id - The channel id to block.
+   * @param kids_app_info - The KidsAppInfo context
    * @returns A list of API responses.
    */
-  async blockChannel(channel_id: string): Promise<ApiResponse[]> {
+  async blockChannel(channel_id: string, kids_app_info: KidsAppInfo = DEFAULT_KIDS_APP_INFO): Promise<ApiResponse[]> {
     const session = this.#session;
 
     if (!session.logged_in)
@@ -90,7 +112,7 @@ export default class Kids {
       }
     });
 
-    const response = await kids_blocklist_picker_command.call(session.actions, { client: 'YTKIDS' });
+    const response = await kids_blocklist_picker_command.call(session.actions, { client: 'YTKIDS', one_time_context: this.#oneTimeContext(kids_app_info) });
     const popup = response.data.command.confirmDialogEndpoint;
     const popup_fragment = { contents: popup.content, engagementPanels: [] };
     const kid_picker = Parser.parseResponse(popup_fragment);

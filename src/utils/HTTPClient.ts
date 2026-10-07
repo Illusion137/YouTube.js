@@ -318,19 +318,6 @@ export default class HTTPClient {
       case 'YTKIDS':
         ctx.client.clientVersion = Constants.CLIENTS.WEB_KIDS.VERSION;
         ctx.client.clientName = Constants.CLIENTS.WEB_KIDS.NAME;
-        ctx.client.kidsAppInfo = { // @TODO: Make this configurable.
-          categorySettings: {
-            enabledCategories: [
-              'approved_for_you', 'black_joy', 'camp', 'collections', 'earth', 'explore',
-              'favorites', 'gaming', 'halloween', 'hero', 'learning', 'move', 'music',
-              'reading', 'shared_by_parents', 'shows', 'soccer', 'sports', 'spotlight', 'winter'
-            ]
-          },
-          contentSettings: {
-            corpusPreference: 'KIDS_CORPUS_PREFERENCE_YOUNGER',
-            kidsNoSearchMode: 'YT_KIDS_NO_SEARCH_MODE_OFF'
-          }
-        };
         break;
       case 'WEB_EMBEDDED':
         ctx.client.clientName = Constants.CLIENTS.WEB_EMBEDDED.NAME;
