@@ -44,6 +44,9 @@ import AppendContinuationItemsAction from './classes/actions/AppendContinuationI
 import UploadFeedbackItem from './classes/ytstudio/UploadFeedbackItem.js';
 import CreatorVideo from './classes/ytstudio/CreatorVideo.js';
 import Translation from './classes/ytstudio/Translation.js';
+import TotalSizeInfo from './classes/ytstudio/TotalSizeInfo.js';
+import CreatorPlaylist from './classes/ytstudio/CreatorPlaylist.js';
+import CreatorPlaylistMembership from './classes/ytstudio/CreatorPlaylistMembership.js';
 import type { IParsedResponse, IRawResponse, RawData, RawNode } from './types/index.js';
 
 const TAG = 'Parser';
@@ -578,6 +581,14 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
     parsed_data.success = data.success;
   }
 
+  if (data.audioWaveformUrl) {
+    parsed_data.audio_waveform_url = data.audioWaveformUrl;
+  }
+
+  if (data.nextPageToken) {
+    parsed_data.next_page_token = data.nextPageToken;
+  }
+
   if (data.playerResponse) {
     parsed_data.player_response = parseResponse(data.playerResponse);
   }
@@ -615,6 +626,22 @@ export function parseResponse<T extends IParsedResponse = IParsedResponse>(data:
 
   if (data.videos && Array.isArray(data.videos)) {
     parsed_data.videos = data.videos.map((video) => new CreatorVideo(video));
+  }
+
+  if (data.playlists && Array.isArray(data.playlists)) {
+    parsed_data.playlists = data.playlists.map((playlist) => new CreatorPlaylist(playlist));
+  }
+
+  if (data.playlistMemberships && Array.isArray(data.playlistMemberships)) {
+    parsed_data.playlist_memberships = data.playlistMemberships.map((playlist) => new CreatorPlaylistMembership(playlist));
+  }
+
+  if (data.videosTotalSize) {
+    parsed_data.total_size = new TotalSizeInfo(data.videosTotalSize);
+  }
+
+  if (data.playlistsTotalSize) {
+    parsed_data.total_size = new TotalSizeInfo(data.playlistsTotalSize);
   }
 
   if (data.feedbackResponses) {

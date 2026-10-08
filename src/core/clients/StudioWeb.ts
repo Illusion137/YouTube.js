@@ -17,7 +17,10 @@ type StudioManagedEndpoint =
   | '/upload/createvideo'
   | '/upload/feedback'
   | '/video/delete'
-  | '/creator/get_creator_videos';
+  | '/creator/get_creator_videos'
+  | '/creator/list_creator_videos'
+  | '/creator/list_creator_playlists'
+  | '/video_editor/get_audio_waveform_url';
 
 interface ScottyStart { upload_url: string; resource_id?: string };
 interface ScottyUploadResult { status?: string; scottyResourceId?: string };
@@ -139,6 +142,37 @@ const TRUE_VIDEO_READ_MASK = {
   monetizedStatus: true,
   serializedShareEntity: true,
   publicMetrics: { all: true }
+};
+
+const TRUE_PLAYLIST_READ_MASK = {
+  artworkEditorState: { all: true },
+  attributionData: { all: true },
+  channelId: true,
+  commentCount: true,
+  courseMetadata: { all: true },
+  creationFlow: true,
+  description: true,
+  genres: { all: true },
+  isSeries: true,
+  key: true,
+  lastTimeUpdated: { all: true },
+  playlistId: true,
+  playlistItemVoting: { all: true },
+  playlistPermissions: { all: true },
+  playlistThumbnail: { all: true },
+  podcastMetadata: { all: true },
+  responseStatus: { all: true },
+  showMetadata: { all: true },
+  status: true,
+  timestamps: { all: true },
+  title: true,
+  translationData: { all: true },
+  tvfilmMetadata: { all: true },
+  videoOrder: true,
+  videosCount: true,
+  viewCount: true,
+  visibilitySetting: true,
+  watchUrl: true
 };
 
 const CREATOR_VIDEO_CATEGORY_IDS = {
@@ -645,5 +679,68 @@ export default class StudioWeb {
       criticalRead: false
     });
     return creator_videos.videos ?? [];
+  }
+
+  async listCreatorVideos(args: {
+    page_token?: string;
+    order?: string;
+    page_size?: number;
+    video_read_mask?: Partial<typeof TRUE_VIDEO_READ_MASK>;
+  }) {
+    args.order ??= 'VIDEO_ORDER_DISPLAY_TIME_DESC';
+    args.page_size ??= 32;
+    args.video_read_mask ??= TRUE_VIDEO_READ_MASK;
+
+    return await this.managedExecute('/creator/list_creator_videos', {
+      filter: {
+        and: {
+          operands: [
+            { channelIdIs: { value: this.#channel_id } },
+            { and: { operands: [ { videoOriginIs: { value: 'VIDEO_ORIGIN_UPLOAD' } }, 
+              { not: { operand: { contentTypeIs: { value: 'CREATOR_CONTENT_TYPE_SHORTS' } } } } ] } },
+            { not: { operand: { tvfilmTypeIs: { value: 'VIDEO_TVFILM_TYPE_MOVIE' } } } },
+            { not: { operand: { tvfilmTypeIs: { value: 'VIDEO_TVFILM_TYPE_EPISODE' } } } },
+            { not: { operand: { tvfilmTypeIs: { value: 'VIDEO_TVFILM_TYPE_EVENT' } } } }
+          ]
+        }
+      },
+      order: args.order,
+      pageSize: args.page_size,
+      mask: args.video_read_mask,
+      ...(args.page_token === undefined ? {} : { pageToken: args.page_token })
+    });
+  }
+
+  async listCreatorPlaylists(channel_id: string, args: {
+    page_token?: string;
+    page_size?: number;
+    member_video_ids?: string[];
+    playlist_read_mask?: Partial<typeof TRUE_PLAYLIST_READ_MASK>;
+  }) {
+    args.page_size ??= 500;
+    args.member_video_ids ??= [];
+    args.playlist_read_mask ??= TRUE_PLAYLIST_READ_MASK;
+
+    return this.managedExecute('/creator/list_creator_playlists', {
+      channelId: channel_id,
+      delegationContext: {
+        externalChannelId: channel_id,
+        roleType: {
+          channelRoleType: 'CREATOR_CHANNEL_ROLE_TYPE_OWNER'
+        }
+      },
+      pageSize: args.page_size,
+      memberVideoIds: args.member_video_ids,
+      mask: args.playlist_read_mask,
+      ...(args.page_token === undefined ? {} : { pageToken: args.page_token })
+    });
+  }
+
+  async getAudioWaveformUrl(video_id: string, scale_ms = 770) {
+    const response = await this.managedExecute('/video_editor/get_audio_waveform_url', {
+      externalVideoId: video_id,
+      scaleMs: scale_ms
+    });
+    return response.audio_waveform_url;
   }
 }

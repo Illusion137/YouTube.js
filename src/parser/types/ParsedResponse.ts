@@ -25,6 +25,9 @@ import type AppendContinuationItemsAction from '../classes/actions/AppendContinu
 import type MusicThumbnail from '../classes/MusicThumbnail.js';
 import type OpenPopupAction from '../classes/actions/OpenPopupAction.js';
 import type { ContinuationContents } from '../parser.js';
+import type TotalSizeInfo from '../classes/ytstudio/TotalSizeInfo.js';
+import type CreatorPlaylist from '../classes/ytstudio/CreatorPlaylist.js';
+import type CreatorPlaylistMembership from '../classes/ytstudio/CreatorPlaylistMembership.js';
 
 export interface IParsedResponse {
   background?: MusicThumbnail;
@@ -42,6 +45,8 @@ export interface IParsedResponse {
   require_challenge?: boolean;
   integrity_token?: IIntegrityToken;
   success?: boolean;
+  next_page_token?: string;
+  audio_waveform_url?: string;
   actions?: SuperParsedResult<YTNode>;
   actions_memo?: Memo;
   content?: YTNode;
@@ -105,6 +110,9 @@ export interface IParsedResponse {
   translation?: Translation;
   creator_video?: CreatorVideo;
   videos?: CreatorVideo[];
+  playlists?: CreatorPlaylist[];
+  playlist_memberships?: CreatorPlaylistMembership[];
+  total_size?: TotalSizeInfo;
   feedback_responses?: { isProcessed: boolean }[];
   challenge_prompt?: IYoutubeApiInnertubeChallengePrompt;
   heartbeat_server_data?: string;
@@ -211,4 +219,7 @@ export type IUpdateCaptionsResponse = Pick<IParsedResponse, 'challenge_prompt'>;
 export type IMetadataUpdateResponse = Pick<IParsedResponse, 'creator_video' | 'challenge_prompt'>;
 export type ICreateVideoResponse = Pick<IParsedResponse, 'contents' | 'video_id' | 'challenge_prompt'>;
 export type IUploadFeedbackResponse = Pick<IParsedResponse, 'feedback_responses' | 'continuation_contents_array' | 'challenge_prompt'>;
-export type IAttestationLog = Pick<IParsedResponse, 'integrity_token'>;
+export type IAttestationLogResponse = Pick<IParsedResponse, 'integrity_token'>;
+export type IGetAudioWaveformUrlResponse = Pick<IParsedResponse, 'audio_waveform_url'>;
+export type ICreatorVideosResponse = Pick<IParsedResponse, 'next_page_token' | 'videos' | 'total_size'>;
+export type ICreatorPlaylistsResponse = Pick<IParsedResponse, 'next_page_token' | 'playlists' | 'playlist_memberships' | 'total_size'>;
