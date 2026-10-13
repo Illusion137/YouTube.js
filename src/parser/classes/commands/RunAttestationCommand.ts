@@ -1,6 +1,6 @@
 import type { EngagementType } from '../../../types/Misc.js';
 import { YTNode } from '../../helpers.js';
-import type { RawNode } from '../../types/index.js';
+import type { IGetChallengeResponse, RawNode } from '../../types/index.js';
 
 export type AttIds = {
   encrypted_video_id?: string;
@@ -27,6 +27,7 @@ export type AttIdsRaw = {
 }
 
 export default class RunAttestationCommand extends YTNode {
+  static page_attestation_cache: Record<string, IGetChallengeResponse> = {};
   static type = 'RunAttestationCommand';
 
   public engagement_type: EngagementType;

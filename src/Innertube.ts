@@ -54,6 +54,7 @@ import {
   SearchFilter_Filters_UploadDate,
   SearchFilter_Prioritize
 } from '../protos/generated/misc/params.js';
+import PostManager from './core/managers/PostManager.js';
 import { parseResponse } from './parser/parser.js';
 
 /**
@@ -656,6 +657,13 @@ export default class Innertube {
    */
   get playlist() {
     return new PlaylistManager(this.#session.actions);
+  }
+
+  /**
+   * An interface for managing posts.
+   */
+  posts(botguard_solver: BotGuardSolver<BotGuardLogBinding>, channel_id: string) {
+    return new PostManager(this.botguard, this.#session.actions, botguard_solver, channel_id);
   }
 
   /**

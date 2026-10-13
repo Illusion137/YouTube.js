@@ -28,6 +28,7 @@ import type { ContinuationContents } from '../parser.js';
 import type TotalSizeInfo from '../classes/ytstudio/TotalSizeInfo.js';
 import type CreatorPlaylist from '../classes/ytstudio/CreatorPlaylist.js';
 import type CreatorPlaylistMembership from '../classes/ytstudio/CreatorPlaylistMembership.js';
+import type RunAttestationCommand from '../classes/commands/RunAttestationCommand.js';
 
 export interface IParsedResponse {
   background?: MusicThumbnail;
@@ -59,11 +60,11 @@ export interface IParsedResponse {
   live_chat_item_context_menu_supported_renderers?: YTNode;
   live_chat_item_context_menu_supported_renderers_memo?: Memo;
   items_memo?: Memo;
-  on_response_received_actions?: ObservedArray<AppendContinuationItemsAction | OpenPopupAction | NavigateAction | ShowMiniplayerCommand | ReloadContinuationItemsCommand>;
+  on_response_received_actions?: ObservedArray<AppendContinuationItemsAction | OpenPopupAction | NavigateAction | ShowMiniplayerCommand | ReloadContinuationItemsCommand | RunAttestationCommand>;
   on_response_received_actions_memo?: Memo;
-  on_response_received_endpoints?: ObservedArray<AppendContinuationItemsAction | OpenPopupAction | NavigateAction | ShowMiniplayerCommand | ReloadContinuationItemsCommand>;
+  on_response_received_endpoints?: ObservedArray<AppendContinuationItemsAction | OpenPopupAction | NavigateAction | ShowMiniplayerCommand | ReloadContinuationItemsCommand | RunAttestationCommand>;
   on_response_received_endpoints_memo?: Memo;
-  on_response_received_commands?: ObservedArray<AppendContinuationItemsAction | OpenPopupAction | NavigateAction | ShowMiniplayerCommand | ReloadContinuationItemsCommand>;
+  on_response_received_commands?: ObservedArray<AppendContinuationItemsAction | OpenPopupAction | NavigateAction | ShowMiniplayerCommand | ReloadContinuationItemsCommand | RunAttestationCommand>;
   on_response_received_commands_memo?: Memo;
   continuation?: Continuation;
   continuation_contents?: ContinuationContents;
